@@ -430,19 +430,24 @@ def train_classifier(
             training_losses.append(loss.item())
 
             correct = total = 0
-            max_samples = 2
-            with torch.no_grad():
-                for j, batch in enumerate(test_data_loader):
-                    model.eval()
-                    logits = model(batch[0].flatten(start_dim=1).to(device))
-                    predicted_class = logits.argmax(dim=-1)
-                    loss = cross_entropy_from_logits(logits, batch[1].to(device))
-                    test_losses.append(loss.item())
-                    correct += torch.where(predicted_class==batch[1].to(device), 1, 0).sum(dim=-1).item()
-                    total += predicted_class.size(-1)
-                    if j >= max_samples:
-                        break
-                print(f"Test accuracy after batch {i}: {correct*100/total:.2f}%")
+            max_samples = 50
+            if i%50 == 0:
+                with torch.no_grad():
+                    for j, batch in enumerate(test_data_loader):
+                        if j >= max_samples:
+                            break
+                        model.eval()
+                        logits = model(batch[0].flatten(start_dim=1).to(device))
+                        predicted_class = logits.argmax(dim=-1)
+                        loss = cross_entropy_from_logits(logits, batch[1].to(device))
+                        test_losses.append(loss.item())
+                        correct += torch.where(predicted_class==batch[1].to(device), 1, 0).sum(dim=-1).item()
+                        total += predicted_class.size(-1)
+                    print(f"Test accuracy after batch {i}: {correct*100/total:.2f}%")
+    plt.plot(training_losses)
+    plt.plot(test_losses)
+    plt.show()
 
 model = MLP(in_dim=28*28, hidden_dim=28*14, out_dim=10, depth=1, use_layernorm=True)
 train_classifier(model, train_dl, test_dl, 1e-4, 1)
+
