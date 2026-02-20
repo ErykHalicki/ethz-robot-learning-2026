@@ -325,8 +325,8 @@ train_ds = datasets.MNIST(root="data", train=True, download=True, transform=tran
 test_ds  = datasets.MNIST(root="data", train=False, download=True, transform=transform)
 
 batch_size = 64
-train_dl = DataLoader(train_ds, batch_size)
-test_dl = DataLoader(test_ds, batch_size)
+train_dl = DataLoader(train_ds, batch_size, shuffle=True)
+test_dl = DataLoader(test_ds, batch_size, shuffle=True)
 
 
 # In[83]:
@@ -378,6 +378,9 @@ def accuracy(loader):
 
 # In[ ]:
 
+from matplotlib import pyplot as plt
+
+device = "mps"
 
 def train_classifier(
     model: nn.Module,
@@ -403,30 +406,43 @@ def train_classifier(
     - do not use torch.nn.CrossEntropyLoss (use your cross_entropy_from_logits)
     """
     torch.manual_seed(seed)
+    model.to(device)
     optim = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9)
+    
+    training_losses = []
+    test_losses = []
 
     for epoch in range(epochs):
         print(f"Staring epoch {epoch}")
         for i, batch in enumerate(train_data_loader):
             model.train()
             optim.zero_grad()
-            logits = model(batch[0].flatten(start_dim=1))
+            logits = model(batch[0].flatten(start_dim=1).to(device))
             predicted_class = logits.argmax(dim=-1)
-            loss = cross_entropy_from_logits(logits, batch[1])
+            loss = cross_entropy_from_logits(logits, batch[1].to(device))
             loss.backward()
+            '''
             with torch.no_grad():
                 accuracy = torch.where(predicted_class==batch[1], 1, 0).sum(dim=-1)/predicted_class.size(-1)
                 print(f"Training accuracy at batch {i}: {accuracy.item()*100:.2f}%")
+            '''
             optim.step()
+            training_losses.append(loss.item())
 
-        correct = total = 0
-        for i, batch in enumerate(test_data_loader):
-            model.eval()
-            logits = model(batch[0].flatten(start_dim=1))
-            predicted_class = logits.argmax(dim=-1)
-            correct += torch.where(predicted_class==batch[1], 1, 0).sum(dim=-1).item()
-            total += predicted_class.size(-1)
-        print(f"Model accuracy after epoch {epoch}: {correct*100/total:.2f}%")
+            correct = total = 0
+            max_samples = 2
+            with torch.no_grad():
+                for j, batch in enumerate(test_data_loader):
+                    model.eval()
+                    logits = model(batch[0].flatten(start_dim=1).to(device))
+                    predicted_class = logits.argmax(dim=-1)
+                    loss = cross_entropy_from_logits(logits, batch[1].to(device))
+                    test_losses.append(loss.item())
+                    correct += torch.where(predicted_class==batch[1].to(device), 1, 0).sum(dim=-1).item()
+                    total += predicted_class.size(-1)
+                    if j >= max_samples:
+                        break
+                print(f"Test accuracy after batch {i}: {correct*100/total:.2f}%")
 
 model = MLP(in_dim=28*28, hidden_dim=28*14, out_dim=10, depth=1, use_layernorm=True)
 train_classifier(model, train_dl, test_dl, 1e-4, 1)
