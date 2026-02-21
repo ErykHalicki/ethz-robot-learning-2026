@@ -324,7 +324,7 @@ transform = transforms.ToTensor()  # -> float32 in [0,1], shape (1, 28, 28)
 train_ds = datasets.MNIST(root="data", train=True, download=True, transform=transform)
 test_ds  = datasets.MNIST(root="data", train=False, download=True, transform=transform)
 
-batch_size = 64
+batch_size = 128
 train_dl = DataLoader(train_ds, batch_size, shuffle=True)
 test_dl = DataLoader(test_ds, batch_size, shuffle=True)
 
@@ -411,10 +411,15 @@ def train_classifier(
     
     training_losses = []
     test_losses = []
+    test_accuracy = []
+
+    max_batches = 4000
 
     for epoch in range(epochs):
         print(f"Staring epoch {epoch}")
         for i, batch in enumerate(train_data_loader):
+            if i > max_batches:
+                break
             model.train()
             optim.zero_grad()
             logits = model(batch[0].flatten(start_dim=1).to(device))
@@ -430,8 +435,8 @@ def train_classifier(
             training_losses.append(loss.item())
 
             correct = total = 0
-            max_samples = 50
-            if i%50 == 0:
+            max_samples = 20
+            if i%max_samples == 0:
                 with torch.no_grad():
                     for j, batch in enumerate(test_data_loader):
                         if j >= max_samples:
@@ -441,13 +446,41 @@ def train_classifier(
                         predicted_class = logits.argmax(dim=-1)
                         loss = cross_entropy_from_logits(logits, batch[1].to(device))
                         test_losses.append(loss.item())
-                        correct += torch.where(predicted_class==batch[1].to(device), 1, 0).sum(dim=-1).item()
-                        total += predicted_class.size(-1)
+                        correct = torch.where(predicted_class==batch[1].to(device), 1, 0).sum(dim=-1).item()
+                        total = predicted_class.size(-1)
+
+                        test_accuracy.append(correct*100/total)
                     print(f"Test accuracy after batch {i}: {correct*100/total:.2f}%")
-    plt.plot(training_losses)
-    plt.plot(test_losses)
+    ax = plt.axes()
+    line1, = ax.plot(training_losses, label="training loss")
+    line2, = ax.plot(test_losses, label='test loss')
+    plt.title(label = "Training/Test Loss vs Batch #")
+    plt.xlabel("Batch")
+    plt.ylabel("Cross Entropy Loss")
+    ax.legend(handles=[line1, line2])
     plt.show()
 
-model = MLP(in_dim=28*28, hidden_dim=28*14, out_dim=10, depth=1, use_layernorm=True)
-train_classifier(model, train_dl, test_dl, 1e-4, 1)
+    ax = plt.axes()
+    line1, = ax.plot(test_accuracy, label="Test Accuracy")
+    plt.title(label = "Test Accuracy(%) vs Batch #")
+    ax.legend(handles=[line1])
+    plt.xlabel("Batch")
+    plt.ylabel("Test Accuracy(%)")
+    plt.show()
+
+    fig, axes = plt.subplots(2, 5, figsize=(12, 5))
+    for i, ax in enumerate(axes.flat):
+        img, label = test_data_loader.dataset[i+100]
+        with torch.no_grad():
+            pred = model(img.flatten().unsqueeze(0).to(device)).argmax(dim=-1).item()
+        ax.imshow(img.squeeze(), cmap='gray')
+        color = 'green' if pred == label else 'red'
+        ax.set_title(f"Pred: {pred}, True: {label}", color=color)
+        ax.axis('off')
+    plt.tight_layout()
+    plt.show()    
+
+
+model = MLP(in_dim=28*28, hidden_dim=28*14, out_dim=10, depth=3, use_layernorm=True)
+train_classifier(model, train_dl, test_dl, 1e-3, 2)
 
