@@ -352,16 +352,16 @@ tfm = transforms.Compose([transforms.ToTensor()])
 train_ds = datasets.MNIST(root="./data", train=True, download=True, transform=tfm)
 test_ds = datasets.MNIST(root="./data", train=False, download=True, transform=tfm)
 
-train_loader = DataLoader(train_ds, batch_size=cfg.batch_size, shuffle=True, num_workers=0)
-test_loader = DataLoader(test_ds, batch_size=cfg.batch_size, shuffle=False, num_workers=0)
+train_loader = DataLoader(train_ds, batch_size=cfg.batch_size, shuffle=True, num_workers=2)
+test_loader = DataLoader(test_ds, batch_size=cfg.batch_size, shuffle=False, num_workers=2)
 
 # Tiny model example. TODO: You're welcome to experiment with these parameters
 patch_size = 4
-d_model = 64
-n_heads = 4
-n_layers = 2
-d_ff = 256
-dropout = 0.1
+d_model = 128
+n_heads = 8
+n_layers = 3
+d_ff = 512
+dropout = 0.2
 
 runs = ['ff', 'reglu', 'geglu']
 results = []
