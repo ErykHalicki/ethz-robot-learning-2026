@@ -149,12 +149,12 @@ class FeedForward(nn.Module):
     """
     def __init__(self, d_model: int, d_ff: int, dropout: float):
         super().__init__()
-        self.seq = nn.Sequential([
+        self.seq = nn.Sequential(
             nn.Linear(d_model, d_ff),
             nn.GELU(),
             nn.Dropout(dropout),
             nn.Linear(d_ff, d_model),
-            nn.Dropout(dropout)])
+            nn.Dropout(dropout))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.seq(x)
@@ -182,14 +182,20 @@ class TransformerEncoderBlock(nn.Module):
     """
     def __init__(self, d_model: int, n_heads: int, mlp: nn.Module, dropout: float):
         super().__init__()
-        self.ln1 = nn.LayerNorm()
-        self.attention_heads = nn.MultiheadAttention(d_model, n_heads)
-        self.ln2 = nn.LayerNorm()
+        self.ln1 = nn.LayerNorm(d_model)
+        self.q_proj = nn.Linear(d_model, d_model)
+        self.k_proj = nn.Linear(d_model, d_model)
+        self.v_proj = nn.Linear(d_model, d_model)
+        self.attention_heads = nn.MultiheadAttention(d_model, n_heads, batch_first=True)
+        self.ln2 = nn.LayerNorm(d_model)
         self.mlp = mlp
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = x + self.dropout(self.attention_head(self.ln1(x)))
+        normed_x = self.ln1(x)
+        x = x + self.dropout(self.attention_heads(self.q_proj(normed_x),
+                                                  self.k_proj(normed_x),
+                                                  self.v_proj(normed_x))[0])
         x = x + self.dropout(self.mlp(self.ln2(x)))
         return x
 
@@ -218,33 +224,37 @@ class TinyViT(nn.Module):
         self.patch_size = patch_size
         patch_dim = patch_size * patch_size
 
-        # TODO: implement a strategy for embedding the patches
-
-        # TODO: implement a strategy to select the right mlp version for your experiment
-
-        match mlp_kind:
-            case "ff":
-                mlp = FeedForward(d_model, d_ff, dropout)
-            case "geglu":
-                mlp = GLUFeedForward(d_model, int(d_ff*2/3), dropout, 'gelu')
-            case "reglu":
-                mlp = GLUFeedForward(d_model, int(d_ff*2/3), dropout, 'relu')
+        self.embedding = PatchEmbed(patch_dim, d_model)
+        self.pos_embedding = PositionalEmbedding(self.num_tokens,d_model)
+    
+        def create_mlp(mlp_kind: str):
+            match mlp_kind:
+                case "ff":
+                    return FeedForward(d_model, d_ff, dropout)
+                case "geglu":
+                    return GLUFeedForward(d_model, int(d_ff*2/3), dropout, 'gelu')
+                case "reglu":
+                    return GLUFeedForward(d_model, int(d_ff*2/3), dropout, 'relu')
 
         self.blocks = nn.ModuleList([
             TransformerEncoderBlock(
                 d_model=d_model,
                 n_heads=n_heads,
-                mlp=mlp, 
+                mlp=create_mlp(mlp_kind), 
                 dropout=dropout,
             )
             for _ in range(n_layers)
         ])
 
-        # TODO: Add a head to project to the amount of output classes you have
+        self.projection = nn.Linear(d_model, 10)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # TODO: Implement
-        logits = None
+        tokens = patchify(x, self.patch_size)
+        embeddings = self.embedding(tokens)
+        enriched_embeddings = self.pos_embedding(embeddings)
+        for block in self.blocks:
+            enriched_embeddings = block(enriched_embeddings)
+        logits = self.projection(enriched_embeddings)
         return logits
 
 
@@ -335,10 +345,12 @@ n_layers = 2
 d_ff = 256
 dropout = 0.1
 
-runs = ['ff', 'glu'] # TODO: Name your runs
+runs = ['ff', 'glu']
 results = []
 
-'''
+train_it = train_loader._get_iterator()
+batch = next(train_it)
+
 for kind in runs:
     model = TinyViT(
         patch_size=patch_size,
@@ -349,13 +361,12 @@ for kind in runs:
         dropout=dropout,
         mlp_kind=kind,
     )
+    print(model(batch[0]))
     # TODO: print anything you might want here
-    print(f"\nRun: {kind} | " )
-    out = train_one_run(kind, model, train_loader, test_loader, cfg)
-    results.append(out)
-'''
-train_it = train_loader._get_iterator()
-batch = next(train_it)
-test_x = torch.arange(8**2).reshape([1,1, 8,8])
-print(test_x)
-print(patchify(test_x, 2))
+    #print(f"\nRun: {kind} | " )
+    #out = train_one_run(kind, model, train_loader, test_loader, cfg)
+    #results.append(out)
+
+
+
+
