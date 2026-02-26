@@ -259,7 +259,7 @@ class TinyViT(nn.Module):
             )
             for _ in range(n_layers)
         ])
-
+    
         self.projection = nn.Linear(d_model, 10)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -268,7 +268,8 @@ class TinyViT(nn.Module):
         enriched_embeddings = self.pos_embedding(embeddings)
         for block in self.blocks:
             enriched_embeddings = block(enriched_embeddings)
-        logits = self.projection(enriched_embeddings)
+        pooled_embeddings = torch.mean(enriched_embeddings, dim=1) #[B][T][D] -> [B][D]
+        logits = self.projection(pooled_embeddings)
         return logits
 
 
@@ -310,7 +311,8 @@ def train_one_run(
             yb = yb.to(cfg.device)
 
             logits = model(xb)
-            loss = ... # TODO: Your criterion
+            loss = F.cross_entropy(logits, yb)
+            print(f"batch {i} loss: {loss}")
 
             opt.zero_grad()
             loss.backward()
@@ -341,7 +343,7 @@ def train_one_run(
 # In[ ]:
 
 
-cfg = TrainConfig(seed=0, batch_size=128, epochs=5, lr=3e-4, weight_decay=0.01, device="cpu")
+cfg = TrainConfig(seed=0, batch_size=128, epochs=1, lr=3e-4, weight_decay=0.01, device="cpu")
 
 tfm = transforms.Compose([transforms.ToTensor()])
 
@@ -375,11 +377,10 @@ for kind in runs:
         dropout=dropout,
         mlp_kind=kind,
     )
-    model(batch[0])
     # TODO: print anything you might want here
-    #print(f"\nRun: {kind} | " )
-    #out = train_one_run(kind, model, train_loader, test_loader, cfg)
-    #results.append(out)
+    print(f"\nRun: {kind} | " )
+    out = train_one_run(kind, model, train_loader, test_loader, cfg)
+    results.append(out)
 
 
 
