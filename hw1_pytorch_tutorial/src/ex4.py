@@ -312,7 +312,7 @@ def train_one_run(
 
             logits = model(xb)
             loss = F.cross_entropy(logits, yb)
-            print(f"batch {i} loss: {loss}")
+            #print(f"batch {i} loss: {loss}")
 
             opt.zero_grad()
             loss.backward()
