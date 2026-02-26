@@ -302,7 +302,6 @@ def train_one_run(
     train_losses: list[float] = []
     test_accs: list[float] = []
 
-    torch.manual_seed(cfg.seed)
 
     for epoch in range(cfg.epochs):
 
@@ -368,6 +367,8 @@ results = []
 
 train_it = train_loader._get_iterator()
 batch = next(train_it)
+
+torch.manual_seed(cfg.seed)
 
 for kind in runs:
     model = TinyViT(
