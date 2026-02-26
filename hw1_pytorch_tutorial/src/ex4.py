@@ -378,7 +378,7 @@ for kind in runs:
         mlp_kind=kind,
     )
     # TODO: print anything you might want here
-    print(f"\nRun: {kind} | " )
+    print(f"\nRun: {kind} | param count: {sum(p.numel() for p in model.parameters() if p.requires_grad)}" )
     out = train_one_run(kind, model, train_loader, test_loader, cfg)
     results.append(out)
 
