@@ -163,13 +163,25 @@ class GLUFeedForward(nn.Module):
     """GLU-family FFN"""
     def __init__(self, d_model: int, d_ff_gated: int, dropout: float, variant: str):
         super().__init__()
-        # TODO: implement
-        raise NotImplementedError
+        self.linear1 = nn.Linear(d_model, d_ff_gated, bias=False)
+        self.linear2 = nn.Linear(d_model, d_ff_gated, bias=False)#omit bias like Shazeer(2020)
+        self.projection = nn.Linear(d_ff_gated, d_model, bias=False)
+        self.dropout =  nn.Dropout(dropout)
+
+        match variant:
+            case "relu": 
+                # acheived the best performance on a few of the metrics in Shazeer(2020) 
+                self.activation = nn.ReLU()
+            case "gelu": 
+                # maintains the same activation function as the feedforward baseline, 
+                # isolating for any performance the GLU approach provides
+                self.activation = nn.GELU()
+            case _:
+                raise Exception(f"please provide a valid activation type, got: {variant}")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # TODO: implement
-        raise NotImplementedError
-
+        return self.dropout(self.projection(self.dropout(self.activation(self.linear1(x))*self.linear2(x))))
+        # this is so ugly but idc
 
 # In[ ]:
 
@@ -235,6 +247,8 @@ class TinyViT(nn.Module):
                     return GLUFeedForward(d_model, int(d_ff*2/3), dropout, 'gelu')
                 case "reglu":
                     return GLUFeedForward(d_model, int(d_ff*2/3), dropout, 'relu')
+                case _:
+                    raise Exception(f"please provide a valid mlp type, got: {mlp_kind}")
 
         self.blocks = nn.ModuleList([
             TransformerEncoderBlock(
@@ -345,7 +359,7 @@ n_layers = 2
 d_ff = 256
 dropout = 0.1
 
-runs = ['ff', 'glu']
+runs = ['ff', 'reglu', 'geglu']
 results = []
 
 train_it = train_loader._get_iterator()
@@ -361,7 +375,7 @@ for kind in runs:
         dropout=dropout,
         mlp_kind=kind,
     )
-    print(model(batch[0]))
+    model(batch[0])
     # TODO: print anything you might want here
     #print(f"\nRun: {kind} | " )
     #out = train_one_run(kind, model, train_loader, test_loader, cfg)
