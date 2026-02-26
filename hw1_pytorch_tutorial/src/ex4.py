@@ -345,7 +345,7 @@ def train_one_run(
 # In[ ]:
 
 
-cfg = TrainConfig(seed=0, batch_size=128, epochs=1, lr=3e-4, weight_decay=0.01, device="cpu")
+cfg = TrainConfig(seed=0, batch_size=128, epochs=1, lr=3e-4, weight_decay=0.01, device="cuda")
 
 tfm = transforms.Compose([transforms.ToTensor()])
 
