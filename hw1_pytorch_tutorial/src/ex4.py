@@ -302,6 +302,8 @@ def train_one_run(
     train_losses: list[float] = []
     test_accs: list[float] = []
 
+    torch.manual_seed(cfg.seed)
+
     for epoch in range(cfg.epochs):
 
         # Train loop
