@@ -173,7 +173,7 @@ class GLUFeedForward(nn.Module):
     def __init__(self, d_model: int, d_ff_gated: int, dropout: float, variant: str):
         super().__init__()
         self.linear1 = nn.Linear(d_model, d_ff_gated, bias=True)
-        self.linear2 = nn.Linear(d_model, d_ff_gated, bias=True)#omit bias like Shazeer(2020)
+        self.linear2 = nn.Linear(d_model, d_ff_gated, bias=False)#omit bias like Shazeer(2020) to match param count
         self.projection = nn.Linear(d_ff_gated, d_model, bias=True)
         self.dropout =  nn.Dropout(dropout)
 
@@ -368,7 +368,7 @@ test_loader = DataLoader(test_ds, batch_size=cfg.batch_size, shuffle=False, num_
 
 # Tiny model example. TODO: You're welcome to experiment with these parameters
 patch_size = 4
-d_model = 200
+d_model = 150
 n_heads = 8
 n_layers = 3
 d_ff = 600
