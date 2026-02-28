@@ -72,6 +72,15 @@
 # 
 # - metric logging sufficient to support your conclusion
 # 
+#
+#  Your goal is to evaluate whether these GLU variants change:
+# 
+# - convergence speed (loss vs steps),
+# 
+# - final test accuracy,
+# 
+# - and/or stability across runs.
+
 # ## Deliverables
 # 
 # Run at least 3 variants (baseline + the activation functions you choose for GLU) and report:
@@ -337,9 +346,14 @@ def train_one_run(
         print(f"[{mlp_kind}] epoch {epoch+1}/{cfg.epochs} | test acc: {test_accs[-1]:.4f}")
 
     return {
+        train_losses,
+        test_accs,
+
         # TODO: Return your metrics that you think will support your claim for this experiment
     }
 
+def count_params(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 # In[ ]:
 
@@ -356,10 +370,10 @@ test_loader = DataLoader(test_ds, batch_size=cfg.batch_size, shuffle=False, num_
 
 # Tiny model example. TODO: You're welcome to experiment with these parameters
 patch_size = 4
-d_model = 128
+d_model = 200
 n_heads = 8
 n_layers = 3
-d_ff = 512
+d_ff = 600
 dropout = 0.2
 
 runs = ['ff', 'reglu', 'geglu']
@@ -381,10 +395,28 @@ for kind in runs:
         mlp_kind=kind,
     )
     # TODO: print anything you might want here
-    print(f"\nRun: {kind} | param count: {sum(p.numel() for p in model.parameters() if p.requires_grad)}" )
+    print(f"\nRun: {kind} | param count: {count_params(model)}" )
     out = train_one_run(kind, model, train_loader, test_loader, cfg)
     results.append(out)
 
 
+# Your goal is to evaluate whether these GLU variants change:
+# 
+# - convergence speed (loss vs steps),
+# 
+# - final test accuracy,
+# 
+# - and/or stability across runs.
 
+# ## Deliverables
+# 
+# Run at least 3 variants (baseline + the activation functions you choose for GLU) and report:
+# 
+# - final and best test accuracy
+# 
+# - number of trainable parameters
+# 
+# - a plot or printed summary of loss/accuracy over epochs
+# 
+# - a short discussion of your results
 
