@@ -356,7 +356,7 @@ def count_params(model):
 # In[ ]:
 
 
-cfg = TrainConfig(seed=0, batch_size=256, epochs=1, lr=3e-4, weight_decay=0.01, device="cuda")
+cfg = TrainConfig(seed=0, batch_size=256, epochs=8, lr=3e-4, weight_decay=0.01, device="cuda")
 
 tfm = transforms.Compose([transforms.ToTensor()])
 
@@ -375,7 +375,7 @@ d_ff = 600
 dropout = 0.2
 
 runs = ['ff', 'reglu', 'geglu']
-results = []
+results = {}
 
 train_it = train_loader._get_iterator()
 batch = next(train_it)
@@ -394,8 +394,7 @@ for kind in runs:
     )
     # TODO: print anything you might want here
     print(f"\nRun: {kind} | param count: {count_params(model)}" )
-    out = train_one_run(kind, model, train_loader, test_loader, cfg)
-    results.append(out)
+    results[kind] = train_one_run(kind, model, train_loader, test_loader, cfg)
 
 import json 
 with open("training_results.json", "w+") as f:
