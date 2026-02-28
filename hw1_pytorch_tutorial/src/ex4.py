@@ -172,9 +172,9 @@ class GLUFeedForward(nn.Module):
     """GLU-family FFN"""
     def __init__(self, d_model: int, d_ff_gated: int, dropout: float, variant: str):
         super().__init__()
-        self.linear1 = nn.Linear(d_model, d_ff_gated, bias=False)
-        self.linear2 = nn.Linear(d_model, d_ff_gated, bias=False)#omit bias like Shazeer(2020)
-        self.projection = nn.Linear(d_ff_gated, d_model, bias=False)
+        self.linear1 = nn.Linear(d_model, d_ff_gated, bias=True)
+        self.linear2 = nn.Linear(d_model, d_ff_gated, bias=True)#omit bias like Shazeer(2020)
+        self.projection = nn.Linear(d_ff_gated, d_model, bias=True)
         self.dropout =  nn.Dropout(dropout)
 
         match variant:
