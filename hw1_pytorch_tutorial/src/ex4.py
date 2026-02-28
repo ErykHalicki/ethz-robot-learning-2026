@@ -346,10 +346,8 @@ def train_one_run(
         print(f"[{mlp_kind}] epoch {epoch+1}/{cfg.epochs} | test acc: {test_accs[-1]:.4f}")
 
     return {
-        train_losses,
-        test_accs,
-
-        # TODO: Return your metrics that you think will support your claim for this experiment
+            "train_loss": train_losses,
+            "test_accuracy": test_accs,
     }
 
 def count_params(model):
@@ -358,7 +356,7 @@ def count_params(model):
 # In[ ]:
 
 
-cfg = TrainConfig(seed=0, batch_size=256, epochs=4, lr=3e-4, weight_decay=0.01, device="cuda")
+cfg = TrainConfig(seed=0, batch_size=256, epochs=1, lr=3e-4, weight_decay=0.01, device="cuda")
 
 tfm = transforms.Compose([transforms.ToTensor()])
 
@@ -398,6 +396,10 @@ for kind in runs:
     print(f"\nRun: {kind} | param count: {count_params(model)}" )
     out = train_one_run(kind, model, train_loader, test_loader, cfg)
     results.append(out)
+
+import json 
+with open("training_results.json", "w+") as f:
+    json.dump(results, f)
 
 
 # Your goal is to evaluate whether these GLU variants change:
