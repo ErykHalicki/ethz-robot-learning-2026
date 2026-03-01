@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 import json
 import numpy as np
-from torchvision.transforms.functional import to_grayscale
+import scipy
 
 with open("training_results.json", "r") as f:
     training_result_dict = json.load(f)
@@ -67,4 +67,9 @@ ax.set_xlabel("Epoch")
 ax.set_ylabel("Test Accuracy (%)")
 plt.show()
 
-# print average std dev over batches (is there any meaningful std deviation difference between models)
+ff_accs = processsed_training_results['ff']["test_accuracy"].T[-1]
+geglu_accs = processsed_training_results['geglu']["test_accuracy"].T[-1]
+reglu_accs = processsed_training_results['reglu']["test_accuracy"].T[-1]
+
+print(scipy.stats.ttest_rel(ff_accs, geglu_accs))
+print(scipy.stats.ttest_rel(ff_accs, reglu_accs))
