@@ -394,7 +394,10 @@ for seed in range(10):
         )
         # TODO: print anything you might want here
         print(f"\nRun: {kind} #{seed} | param count: {count_params(model)}" )
-        results[kind].append(train_one_run(kind, model, train_loader, test_loader, cfg))
+        try:
+            results[kind].append(train_one_run(kind, model, train_loader, test_loader, cfg))
+        except:
+            results[kind] = [train_one_run(kind, model, train_loader, test_loader, cfg)]
 
 import json 
 with open("training_results.json", "w+") as f:
