@@ -368,10 +368,10 @@ test_loader = DataLoader(test_ds, batch_size=cfg.batch_size, shuffle=False, num_
 
 # Tiny model example. TODO: You're welcome to experiment with these parameters
 patch_size = 4
-d_model = 150
-n_heads = 6
+d_model = 50
+n_heads = 5
 n_layers = 3
-d_ff = 600
+d_ff = 200
 dropout = 0.2
 
 runs = ['ff', 'reglu', 'geglu']
