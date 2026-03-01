@@ -380,21 +380,21 @@ results = {}
 train_it = train_loader._get_iterator()
 batch = next(train_it)
 
-torch.manual_seed(cfg.seed)
-
-for kind in runs:
-    model = TinyViT(
-        patch_size=patch_size,
-        d_model=d_model,
-        n_heads=n_heads,
-        n_layers=n_layers,
-        d_ff=d_ff,
-        dropout=dropout,
-        mlp_kind=kind,
-    )
-    # TODO: print anything you might want here
-    print(f"\nRun: {kind} | param count: {count_params(model)}" )
-    results[kind] = train_one_run(kind, model, train_loader, test_loader, cfg)
+for seed in range(10):
+    torch.manual_seed(seed*450 + 11)
+    for kind in runs:
+        model = TinyViT(
+            patch_size=patch_size,
+            d_model=d_model,
+            n_heads=n_heads,
+            n_layers=n_layers,
+            d_ff=d_ff,
+            dropout=dropout,
+            mlp_kind=kind,
+        )
+        # TODO: print anything you might want here
+        print(f"\nRun: {kind} #{seed} | param count: {count_params(model)}" )
+        results[kind].append(train_one_run(kind, model, train_loader, test_loader, cfg))
 
 import json 
 with open("training_results.json", "w+") as f:
