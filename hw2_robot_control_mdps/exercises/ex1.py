@@ -18,7 +18,7 @@ def get_lemniscate_keypoint(t, a=0.2):
         y (float or np.ndarray): y coordinates of the keypoint on the lemniscate.
         z (float or np.ndarray): z coordinates of the keypoint on the lemniscate.
     """
-    raise NotImplementedError()
+    return (a*np.cos(t) / (1 + np.sin(t)**2), a*np.cos(t) * np.sin(t) / (1 + np.sin(t)**2))
 
 def build_keypoints(count=16, width=0.25, x_offset=0.3, z_offset=0.25):
     """TODO:
@@ -38,7 +38,20 @@ def build_keypoints(count=16, width=0.25, x_offset=0.3, z_offset=0.25):
     Returns:
         np.ndarray: Array of shape (count, 3) containing the generated keypoints.
     """
-    raise NotImplementedError()
+    ts = np.linspace(0, 2*np.pi, count)
+    ys, zs = get_lemniscate_keypoint(ts, width)
+    xs = np.zeros((count)) + x_offset
+    zs+=z_offset
+    return np.column_stack([xs,ys,zs])
+
+'''
+from matplotlib import pyplot as plt
+p = build_keypoints(count=100,width=1.0)
+plt.plot(p[:, 1], p[:, 2])
+plt.xlim((-1,1))
+plt.ylim((-1,1))
+plt.show()
+'''
 
 def ik_track(model, data, site_name, target_pos,
              damping=1e-3, pos_gain=2.0, dt=0.1, max_iters=2000):
@@ -82,11 +95,16 @@ def ik_track(model, data, site_name, target_pos,
         mujoco.mj_comPos(model, data)
 
         # TODO: compute end-effector position error
-        err_pos = ...
+        arr = []
+        for j in range(3):
+            arr.append(target_pos[j] - data.site(site_name).xpos[j])
+        err_pos = np.array(arr)
+
 
         # TODO: check if the 2-norm of the position error is within a small threshold (1e-3), if yes, break the loop
-        ...
-        
+        if np.linalg.norm(err_pos) <= 1e-3:
+            break
+    
         # Get the Jacobian of the end-effector using mj_jacSite.
         jacp = np.zeros((3, num_joints)) # position Jacobian
         jacr = np.zeros((3, num_joints)) # orientation Jacobian
@@ -99,19 +117,22 @@ def ik_track(model, data, site_name, target_pos,
         # [pos_gain * err_pos, rot_gain * err_rot]. Since we are ignoring orientation tracking, you can set the rotational part of the weighted error to zero.
         # Instead of directly computing the matrix inverse (which can be numerically unstable), you should use np.linalg.solve to solve the 
         # linear system (J @ J^T + damping * I) x = weighted_err for x, and then compute qdot = J^T @ x. This is more stable and efficient than computing the inverse.
-        qdot = ...
+        weighted_err = np.zeros((6))
+        weighted_err[:3] = err_pos*pos_gain
 
+        qdot = J.T @ np.linalg.lstsq((J @ J.T + damping * np.eye(6)), weighted_err)[0]
         # optional clamp to avoid overshoot
         qdot = np.clip(qdot, -2.0, 2.0)
 
         # Update the joint configuration (qpos) using the output from the Damped Least Squares method
         data.qvel[:] = 0.0
-        data.qpos[:] += qdot * dt
+        data.qpos[:] += qdot.squeeze() * dt
 
     # If exiting the loop without reaching the target, print a warning message
     if i >= max_iters - 1 and np.linalg.norm(err_pos) >= 5e-3:
         print("Warning: IK did not converge within the iteration limit.")
         print(f"Final position error: {np.linalg.norm(err_pos):.4f}")
+    print(i)
 
     # Restore the original joint configuration and return the target joint configuration
     target_qpos = data.qpos.copy()

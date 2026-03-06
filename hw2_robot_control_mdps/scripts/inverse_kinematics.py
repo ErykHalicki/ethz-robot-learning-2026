@@ -31,4 +31,4 @@ if __name__ == "__main__":
             else:
                 print("IK did not converge to the target within the threshold.")
                 print(f"Tracking error: {np.linalg.norm(data.site(site_name).xpos - keypoints[keypoint_id]):.4f}")
-            time.sleep(0.5)
+            time.sleep(0.1)
