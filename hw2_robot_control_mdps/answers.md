@@ -22,9 +22,16 @@ Our IK solver also doesnt support any secondary objectives like minimizing joint
 
 ## Ex2
 
-1. If you keep increasing $K_P$, what issue arises when tracking the waypoints?
-2. How does $K_D$ mitigate the effect you saw above when increasing $K_P$?
-3. In what scenarios is a non-zero $K_I$ needed for the controller to perform well?
+### 1. If you keep increasing $K_P$, what issue arises when tracking the waypoints?
+The pid controller becomes unstable, and we end up overshooting the waypoints.
+
+### 2. How does $K_D$ mitigate the effect you saw above when increasing $K_P$?
+When a high Kp causes a fast approach towards the setpoint,
+the derivative of the error will also be very large, counteracting the proportional component of the signal and preventing overshoot
+
+### 3. In what scenarios is a non-zero $K_I$ needed for the controller to perform well?
+If there is a constant force applied to the arm, like gravity, there would be a constant need for a proportional correction. 
+A KI term can solve this by accumulating the error caused by gravity over time.
 
 ## Ex3 (Bonus)
 
