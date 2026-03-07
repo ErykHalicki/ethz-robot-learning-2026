@@ -45,5 +45,11 @@ def pid_control(tracking_error_history, timestep, Kp=150.0, Ki=0.0, Kd=0.01):
     Returns:
         np.ndarray: Control signal.
     """
-    raise NotImplementedError()
-            
+    tracking_error_history = np.array(tracking_error_history)
+    P = tracking_error_history*Kp
+    I = np.cumulative_sum(tracking_error_history, axis=0)*Ki*timestep
+    D = ((tracking_error_history[1:, :] - tracking_error_history[:-1, :])/timestep) * Kd
+    D = np.concatenate([np.zeros((1,tracking_error_history.shape[1])), D], axis=0)
+    return (P+I+D)[-1, :]
+
+#print(pid_control([np.array([0.1 , 0.8 , 0.03]), np.array([0.02, 0.6 , 0.05])], 0.01))

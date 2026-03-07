@@ -132,7 +132,7 @@ def ik_track(model, data, site_name, target_pos,
     if i >= max_iters - 1 and np.linalg.norm(err_pos) >= 5e-3:
         print("Warning: IK did not converge within the iteration limit.")
         print(f"Final position error: {np.linalg.norm(err_pos):.4f}")
-    print(i)
+    #print(i)
 
     # Restore the original joint configuration and return the target joint configuration
     target_qpos = data.qpos.copy()
