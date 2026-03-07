@@ -38,7 +38,7 @@ def build_keypoints(count=16, width=0.25, x_offset=0.3, z_offset=0.25):
     Returns:
         np.ndarray: Array of shape (count, 3) containing the generated keypoints.
     """
-    ts = np.linspace(0, 2*np.pi, count)
+    ts = np.linspace(0, 2*np.pi, count+1)[:count]
     ys, zs = get_lemniscate_keypoint(ts, width)
     xs = np.zeros((count)) + x_offset
     zs+=z_offset
