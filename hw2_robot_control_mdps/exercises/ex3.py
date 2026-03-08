@@ -21,9 +21,7 @@ def reset_robot(default_qpos: np.ndarray) -> np.ndarray:
     Returns:
     - reset_qpos: np.ndarray. The joint positions to reset the robot to. Dimensionality: 1D array, Shape: (num_joints,).
     """
-    raise NotImplementedError()
-    
-
+    return default_qpos + np.random.uniform(-0.5,0.5,default_qpos.size)
 
 def reset_target_position(base_pos: np.ndarray) -> np.ndarray:
     """
@@ -39,7 +37,12 @@ def reset_target_position(base_pos: np.ndarray) -> np.ndarray:
     Returns:
     - target_pos: np.ndarray. The 3D position of the target relative to the base. Dimensionality: 1D array, Shape: (3,).
     """
-    raise NotImplementedError()
+    limits = [[0.2, 0.4], [-0.2, 0.2], [0.1,0.4]]
+    for i in range(3):
+        mask = np.zeros(base_pos.shape)
+        mask[i] = 1.0
+        base_pos += np.random.uniform(limits[i][0], limits[i][1], base_pos.shape) * mask
+    return base_pos
 
 
 def process_action(action: np.ndarray, jnt_range: np.ndarray) -> np.ndarray:
@@ -57,7 +60,7 @@ def process_action(action: np.ndarray, jnt_range: np.ndarray) -> np.ndarray:
     Returns:
     - target_qpos: np.ndarray. Target joint positions to apply as control. Dimensionality: 1D array, Shape: (num_joints,).
     """
-    raise NotImplementedError()
+    return action * (jnt_range[:,1] - jnt_range[:,0]) + jnt_range[:,0]
 
 
 def compute_reward(ee_tracking_error: float) -> float:
