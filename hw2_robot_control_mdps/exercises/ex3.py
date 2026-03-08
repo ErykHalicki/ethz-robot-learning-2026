@@ -37,13 +37,11 @@ def reset_target_position(base_pos: np.ndarray) -> np.ndarray:
     Returns:
     - target_pos: np.ndarray. The 3D position of the target relative to the base. Dimensionality: 1D array, Shape: (3,).
     """
+    base_pos = np.array(base_pos)
     limits = [[0.2, 0.4], [-0.2, 0.2], [0.1,0.4]]
     for i in range(3):
-        mask = np.zeros(base_pos.shape)
-        mask[i] = 1.0
-        base_pos += np.random.uniform(limits[i][0], limits[i][1], base_pos.shape) * mask
+        base_pos[i] += np.random.uniform(limits[i][0], limits[i][1], (1)).item()
     return base_pos
-
 
 def process_action(action: np.ndarray, jnt_range: np.ndarray) -> np.ndarray:
     """
@@ -60,8 +58,15 @@ def process_action(action: np.ndarray, jnt_range: np.ndarray) -> np.ndarray:
     Returns:
     - target_qpos: np.ndarray. Target joint positions to apply as control. Dimensionality: 1D array, Shape: (num_joints,).
     """
-    return action * (jnt_range[:,1] - jnt_range[:,0]) + jnt_range[:,0]
+    return action * (jnt_range[:,1] - jnt_range[:,0])/2 + (np.mean(jnt_range, axis=1))
 
+'''
+action = np.array([1.0, -1.0, 0.5])
+jt_range = np.array([[-100, 150], 
+                     [-50, 50], 
+                     [-30, 30]])
+print( process_action(action, jt_range) )
+'''
 
 def compute_reward(ee_tracking_error: float) -> float:
     """
@@ -83,8 +88,8 @@ def compute_reward(ee_tracking_error: float) -> float:
     Returns:
     - reward: float. The computed reward based on the tracking error. Dimensionality: scalar
     """
-    raise NotImplementedError()
 
+    return np.exp(-2 * ee_tracking_error) + (1.0 if ee_tracking_error < 0.005 else 0.0)
 
 def get_obs(qpos: np.ndarray, ee_pos_w: np.ndarray, ee_rot_w: np.ndarray, base_pos_w: np.ndarray, base_rot_w: np.ndarray, target_pos_w: np.ndarray) -> np.ndarray:
     """
@@ -112,4 +117,10 @@ def get_obs(qpos: np.ndarray, ee_pos_w: np.ndarray, ee_rot_w: np.ndarray, base_p
 
     Hints: You can use the provided functions quat_mul, quat_conjugate, quat_normalize, rot_mat_to_quat for quaternion operations.
     """
-    raise NotImplementedError()
+    obs = []
+    obs.append(qpos)
+    obs.append(ee_pos_w-base_pos_w)
+    obs.append(quat_normalize(rot_mat_to_quat(base_rot_w.T @ ee_rot_w)))
+    obs.append(target_pos_w-base_pos_w)
+    return np.concat(obs)
+
