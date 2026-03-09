@@ -38,8 +38,11 @@ class SO100TrackEnv(gym.Env):
 
         # Evaluation metrics
         self.ee_tracking_error = 0.0
-        self.last_ee_tracking_error = 0.0
-        self.ee_tracking_error_list = []
+        self.last_ee_site_pos = np.array([0.0, 0.0, 0.0])
+        self.vel = 0.0
+        self.accel = 0.0
+        self.collected_first_pos = False
+        self.integrated_ee_tracking_error = 0.0
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed, options=options)
@@ -60,8 +63,7 @@ class SO100TrackEnv(gym.Env):
         return process_action(action, self.model.jnt_range)
 
     def compute_reward(self):
-        result = compute_reward2(self.ee_tracking_error, self.last_ee_tracking_error)
-        self.last_ee_tracking_error = self.ee_tracking_error
+        result = compute_reward2(self.ee_tracking_error, self.vel, self.accel)
         return result
 
     def step(self, action):
@@ -69,8 +71,13 @@ class SO100TrackEnv(gym.Env):
         for _ in range(self.ctrl_decimation): 
             mujoco.mj_step(self.model, self.data)
         self.ee_tracking_error = np.linalg.norm(self.data.site("ee_site").xpos - self.data.mocap_pos[0])
-        self.ee_tracking_error_list.append(self.ee_tracking_error)
+        if self.collected_first_pos:
+            vel = np.linalg.norm(self.data.site("ee_site").xpos - self.last_ee_site_pos)
+            self.accel = self.vel - vel
+            self.vel = vel
+        self.last_ee_site_pos = self.data.site("ee_site").xpos
         reward = self.compute_reward()
+        self.collected_first_pos = True
 
         terminated = False
         truncated = False

@@ -34,11 +34,9 @@ If there is a constant force applied to the arm, like gravity, there would be a 
 A KI term can solve this by accumulating the error caused by gravity over time.
 
 ## Ex3 (Bonus)
-
-Observe the robot's performance when deploying your trained policy. You can run the following code and compare the performance of your RL policy with the previously implemented PID controller:
-
-```bash
-python scripts/evaluate_trajectory.py --load_run=1 --checkpoint=500
-```
-
 What difference can you observe when the robot is tracking the keypoints on the Lemniscate curve? To improve the performance of the RL policy, what changes can you make in the functions in ex3? Modify these functions (you can also change their arguments, and make corresponding changes in `env/so100_tracking_env.py`). Train another RL policy with your new environments and show the performance in the video, and explain how your changes impact the robot's performance. You can also make changes to the PPO hyperparameters (gamma, ent_coef, etc.).
+
+The RL policy is noticably more random, it doesnt follow the shortest path to the next marker, often moving away on accident. 
+I beleive that an easy improvement to the RL policy would be introducing a relative velocity penalty to the reward function (and increasing the magnitude of the sparse reward?)
+To do this, I modified the reward function in exercise 3 to compute the difference between the current and last tracking error, reducing the reward if the end effector moves further away from the target
+As we can see, the policy with the new reward function tracks points more smoothly than one that only takes current error into account. 
