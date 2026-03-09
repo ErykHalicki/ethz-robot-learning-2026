@@ -42,7 +42,7 @@ class SO100TrackEnv(gym.Env):
         self.vel = 0.0
         self.accel = 0.0
         self.collected_first_pos = False
-        self.integrated_ee_tracking_error = 0.0
+        self.integrated_distance = 0.0
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed, options=options)
@@ -63,7 +63,7 @@ class SO100TrackEnv(gym.Env):
         return process_action(action, self.model.jnt_range)
 
     def compute_reward(self):
-        result = compute_reward2(self.ee_tracking_error, self.vel, self.accel)
+        result = compute_reward2(self.ee_tracking_error, self.vel, self.accel, self.integrated_distance)
         return result
 
     def step(self, action):
@@ -75,6 +75,7 @@ class SO100TrackEnv(gym.Env):
             vel = np.linalg.norm(self.data.site("ee_site").xpos - self.last_ee_site_pos)
             self.accel = self.vel - vel
             self.vel = vel
+            self.integrated_distance += vel
         self.last_ee_site_pos = self.data.site("ee_site").xpos
         reward = self.compute_reward()
         self.collected_first_pos = True

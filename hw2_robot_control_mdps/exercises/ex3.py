@@ -91,8 +91,8 @@ def compute_reward(ee_tracking_error: float) -> float:
 
     return np.exp(-2 * ee_tracking_error) + (1.0 if ee_tracking_error < 0.005 else 0.0)
 
-def compute_reward2(ee_tracking_error: float, velocity: float, accel) -> float:
-    return np.exp(-2 * ee_tracking_error) + (1.0 if ee_tracking_error < 0.005 else 0.0) - np.exp(velocity)*0.5 - np.exp(accel)*0.1
+def compute_reward2(ee_tracking_error: float, velocity: float, accel, distance) -> float:
+    return np.exp(-2 * ee_tracking_error) + (1.0 if ee_tracking_error < 0.005 else 0.0) - np.exp(velocity)*0.5 - np.exp(accel)*0.1 - distance*0.05
 
 def get_obs(qpos: np.ndarray, ee_pos_w: np.ndarray, ee_rot_w: np.ndarray, base_pos_w: np.ndarray, base_rot_w: np.ndarray, target_pos_w: np.ndarray) -> np.ndarray:
     """
