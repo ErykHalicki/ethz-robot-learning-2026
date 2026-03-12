@@ -1,0 +1,6 @@
+**.egg-info
+**.pyc
+**.DS_Store
+**/datasets
+**/data
+**.ipynb_checkpoints

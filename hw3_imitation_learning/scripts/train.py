@@ -28,9 +28,9 @@ from hw3.model import BasePolicy, build_policy
 from torch.utils.data import DataLoader, random_split
 
 # TODO: Choose your own hyperparameters!
-EPOCHS = ... 
-BATCH_SIZE = ...
-LR = ...
+EPOCHS = 1
+BATCH_SIZE = 64
+LR = 1e-4
 VAL_SPLIT = 0.1
 
 
@@ -46,7 +46,10 @@ def train_one_epoch(
 
     for batch in loader:
         states, action_chunks = batch
-        # TODO: Implement the training step for one batch here.
+        states = states.to(device)
+        action_chunks = action_chunks.to(device)
+        print(states.shape)
+
         # This mostly: Get states and action_chunks onto the correct device, compute the loss, and step the optimizer.
 
     return total_loss / max(n_batches, 1)
@@ -112,8 +115,6 @@ def main() -> None:
 
     # ── load data ─────────────────────────────────────────────────────
     zarr_paths = [args.zarr]
-    if args.extra_zarr:
-        zarr_paths.extend(args.extra_zarr)
 
     if len(zarr_paths) == 1:
         states, actions, ep_ends = load_zarr(
