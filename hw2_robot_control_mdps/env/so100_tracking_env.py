@@ -63,7 +63,7 @@ class SO100TrackEnv(gym.Env):
         return process_action(action, self.model.jnt_range)
 
     def compute_reward(self):
-        result = compute_reward2(self.ee_tracking_error, self.vel, self.accel, self.integrated_distance)
+        result = compute_reward2(self.ee_tracking_error, self.vel, self.accel)
         return result
 
     def step(self, action):

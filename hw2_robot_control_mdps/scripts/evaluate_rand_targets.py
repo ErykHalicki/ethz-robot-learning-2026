@@ -45,7 +45,7 @@ if __name__ == "__main__":
     policy_path = EXP_DIR / f"so100_tracking_{args.load_run}" / f"model_{args.checkpoint}.zip" 
     
     env = SO100TrackEnv(xml_path=XML_PATH, render_mode=None)
-    max_num_episodes = 10
+    max_num_episodes = 15
     play_episode_length_s = 2
     play_episode_length = int(play_episode_length_s / env.ctrl_timestep)
     policy_callback.total_ee_tracking_errors = []
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     rl_model = PPO.load(policy_path, device=args.device)
 
     mujoco.set_mjcb_control(policy_callback)
-    with mujoco.viewer.launch_passive(env.model, env.data) as viewer:
+    with mujoco.viewer.launch_passive(env.model, env.data, show_left_ui=False, show_right_ui=False) as viewer:
         while viewer.is_running() and policy_callback.step_count <= max_num_episodes * play_episode_length * env.ctrl_decimation:
             mujoco.mj_step(env.model, env.data)
             viewer.sync()

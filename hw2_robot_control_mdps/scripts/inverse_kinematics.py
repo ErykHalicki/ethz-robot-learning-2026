@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     site_name = "ee_site"
 
-    with mujoco.viewer.launch_passive(model, data) as viewer:
+    with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
         refresh_markers(viewer, keypoints)
         while viewer.is_running():
             target_qpos = ik_track(model, data, site_name, keypoints[keypoint_id])

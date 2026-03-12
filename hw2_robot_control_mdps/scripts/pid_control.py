@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     waypoint_id = 0
     mujoco.set_mjcb_control(pid_callback)
-    with mujoco.viewer.launch_passive(model, data) as viewer:
+    with mujoco.viewer.launch_passive(model, data, show_left_ui=False, show_right_ui=False) as viewer:
         refresh_markers(viewer, keypoints)
         refresh_markers(viewer, total_waypoints, radius=0.003, rgba=(0, 1, 1, 1), ngeom_start=len(keypoints))
         while viewer.is_running():
