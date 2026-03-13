@@ -130,6 +130,7 @@ def main() -> None:
         "If omitted, uses the action_key attribute from the zarr metadata.",
     )
     parser.add_argument("--seed", type=int, default=514, help="Random seed.")
+    parser.add_argument("--epochs", type=int, default=EPOCHS, help=f"Number of training epochs (default: {EPOCHS}).")
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -255,7 +256,7 @@ def main() -> None:
             save_path,
         )
 
-    for epoch in range(1, EPOCHS + 1):
+    for epoch in range(1, args.epochs + 1):
         train_loss = train_one_epoch(model, train_loader, optimizer, device)
         val_loss = evaluate(model, val_loader, device)
         scheduler.step()
@@ -272,7 +273,7 @@ def main() -> None:
         save_model(save_path)
 
         print(
-            f"Epoch {epoch:3d}/{EPOCHS} | "
+            f"Epoch {epoch:3d}/{args.epochs} | "
             f"train {train_loss:.6f} | val {val_loss:.6f}{tag}"
         )
 
