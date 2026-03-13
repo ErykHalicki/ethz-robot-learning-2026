@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import torch
 import zarr as zarr_lib
@@ -100,6 +102,18 @@ def main() -> None:
         help="Action chunk horizon H (default: 16).",
     )
     parser.add_argument(
+        "--d_model",
+        type=int,
+        default=200,
+        help="Size of model hidden layers",
+    )
+    parser.add_argument(
+        "--depth",
+        type=int,
+        default=24,
+        help="number of model hidden layers",
+    )
+    parser.add_argument(
         "--state-keys",
         nargs="+",
         default=None,
@@ -115,7 +129,7 @@ def main() -> None:
         "Supports column slicing with [:N], [M:], [M:N]. "
         "If omitted, uses the action_key attribute from the zarr metadata.",
     )
-    parser.add_argument("--seed", type=int, default=42, help="Random seed.")
+    parser.add_argument("--seed", type=int, default=514, help="Random seed.")
     args = parser.parse_args()
 
     torch.manual_seed(args.seed)
@@ -169,7 +183,9 @@ def main() -> None:
         args.policy,
         state_dim=states.shape[1],
         action_dim=actions.shape[1],
-        chunk_size=args.chunk_size
+        chunk_size=args.chunk_size,
+        d_model=args.d_model,
+        depth=args.depth,
     ).to(device)
 
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -199,49 +215,61 @@ def main() -> None:
     if n_dagger_eps > 0:
         save_name = f"best_model_{action_space}_{args.policy}_dagger{n_dagger_eps}ep.pt"
     # Default: checkpoints/<task>/
+    ts = datetime.now(ZoneInfo("Europe/Berlin")).strftime("%Y-%m-%d_%H-%M-%S")
     if "multi_cube" in str(args.zarr):
-        ckpt_dir = Path("./checkpoints/multi_cube")
+        ckpt_dir = Path(f"./checkpoints/multi_cube/{ts}")
     else:
-        ckpt_dir = Path("./checkpoints/single_cube")
+        ckpt_dir = Path(f"./checkpoints/single_cube/{ts}")
     save_path = ckpt_dir / save_name
     save_path.parent.mkdir(parents=True, exist_ok=True)
+
+
+    def save_model(save_path):
+        torch.save(
+            {
+                "epoch": epoch,
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "normalizer": {
+                    #"state_mean": normalizer.state_mean,
+                    #"state_std": normalizer.state_std,
+                    #"action_mean": normalizer.action_mean,
+                    #"action_std": normalizer.action_std,
+                    "state_mean": 0,
+                    "state_std": 1,
+                    "action_mean": 0,
+                    "action_std": 1,
+                    # changed this because i want to
+                    # discretize my action space, and it is getting in the way
+                },
+                "chunk_size": args.chunk_size,
+                "policy_type": args.policy,
+                "state_keys": args.state_keys,
+                "action_keys": args.action_keys,
+                "state_dim": int(states.shape[1]),
+                "action_dim": int(actions.shape[1]),
+                "val_loss": val_loss,
+                "d_model": args.d_model,
+                "depth": args.depth,
+            },
+            save_path,
+        )
 
     for epoch in range(1, EPOCHS + 1):
         train_loss = train_one_epoch(model, train_loader, optimizer, device)
         val_loss = evaluate(model, val_loader, device)
         scheduler.step()
-
+        
         tag = ""
         if val_loss < best_val:
             best_val = val_loss
-            torch.save(
-                {
-                    "epoch": epoch,
-                    "model_state_dict": model.state_dict(),
-                    "optimizer_state_dict": optimizer.state_dict(),
-                    "normalizer": {
-                        #"state_mean": normalizer.state_mean,
-                        #"state_std": normalizer.state_std,
-                        #"action_mean": normalizer.action_mean,
-                        #"action_std": normalizer.action_std,
-                        "state_mean": 0,
-                        "state_std": 1,
-                        "action_mean": 0,
-                        "action_std": 1,
-                        # changed this because i want to
-                        # discretize my action space, and it is getting in the way
-                    },
-                    "chunk_size": args.chunk_size,
-                    "policy_type": args.policy,
-                    "state_keys": args.state_keys,
-                    "action_keys": args.action_keys,
-                    "state_dim": int(states.shape[1]),
-                    "action_dim": int(actions.shape[1]),
-                    "val_loss": val_loss,
-                },
-                save_path,
-            )
-            tag = " ✓ saved"
+            save_name = f"best_model_{action_space}_{args.policy}.pt"
+            save_path = ckpt_dir / save_name
+            save_model(save_path)
+            tag = " ✓ best"
+        save_name = f"epoch_{epoch}_{action_space}_{args.policy}.pt"
+        save_path = ckpt_dir / save_name
+        save_model(save_path)
 
         print(
             f"Epoch {epoch:3d}/{EPOCHS} | "

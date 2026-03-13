@@ -42,9 +42,8 @@ class ObstaclePolicy(BasePolicy):
 
     def __init__(
         self, 
-        h_dim = 200, 
-        num_layers = 24,# ~1M params
-
+        d_model = 200, 
+        depth = 24,# ~1M params
         *args, 
         **kwargs
     ) -> None:
@@ -52,22 +51,22 @@ class ObstaclePolicy(BasePolicy):
         # model size parameters
         self.gripper_action_dim = 10
         self.ee_action_dim = 7 #[0, +x, +y, +z, -x, -y, -z]
-        self.num_layers = num_layers 
-        self.h_dim = h_dim
+        self.depth = depth 
+        self.d_model = d_model
 
         self.activation = nn.GELU()
-        self.input_layer = nn.Linear(self.state_dim,h_dim)
-        self.layer_norms = nn.ModuleList([nn.LayerNorm([h_dim]) for _ in range(self.num_layers)])
-        self.hidden_layers = nn.ModuleList([nn.Linear(h_dim, h_dim) for _ in range(self.num_layers)])
-        self.ee_output_layer = nn.Linear(h_dim, self.ee_action_dim*self.chunk_size)
-        self.gripper_output_layer = nn.Linear(h_dim, self.gripper_action_dim*self.chunk_size)
+        self.input_layer = nn.Linear(self.state_dim,d_model)
+        self.layer_norms = nn.ModuleList([nn.LayerNorm([d_model]) for _ in range(self.depth)])
+        self.hidden_layers = nn.ModuleList([nn.Linear(d_model, d_model) for _ in range(self.depth)])
+        self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
+        self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
 
         self.ee_loss_weight = 0.5
         self.loss_function = torch.nn.CrossEntropyLoss()
         self.softmax = torch.nn.Softmax(dim=-1)
 
-        self.gripper_bounds = torch.linspace(-0.2, 1.75, self.gripper_action_dim)
-        self.ee_action_map = torch.tensor([[0.,0.,0.],  # 0 movement
+        gripper_bounds = torch.linspace(-0.2, 1.75, self.gripper_action_dim)
+        ee_action_map = torch.tensor([[0.,0.,0.],  # 0 movement
                                           [1.,0.,0.],   # +x
                                           [0.,1.,0.],   # +y
                                           [0.,0.,1.],   # +z
@@ -75,6 +74,9 @@ class ObstaclePolicy(BasePolicy):
                                           [0.,-1.,0.],  # -y
                                           [0.,0.,-1.]]) # -z
         self.ee_translation_per_step = 0.01
+        self.register_buffer('gripper_centers', (gripper_bounds[:-1] + gripper_bounds[1:]) / 2)
+        self.register_buffer('gripper_bounds', gripper_bounds)
+        self.register_buffer('ee_action_map', ee_action_map)
 
     def forward(
         self, x
@@ -86,7 +88,7 @@ class ObstaclePolicy(BasePolicy):
         gripper: [B, chunk_dim, gripper_action_dim]
         """
         x = self.activation(self.input_layer(x))
-        for i in range(self.num_layers):
+        for i in range(self.depth):
             x = self.activation(self.hidden_layers[i](self.layer_norms[i](x))) + x
         gripper_out = self.gripper_output_layer(x)
         ee_out = self.ee_output_layer(x)
@@ -113,7 +115,7 @@ class ObstaclePolicy(BasePolicy):
             gripper_idx = torch.multinomial(gripper_probabilities, num_samples=1).reshape([state.size(0), self.chunk_size, 1])
             ee_idx = torch.multinomial(ee_probabilities, num_samples=1).reshape([state.size(0), self.chunk_size])
             ee_actions = self.ee_action_map[ee_idx]*self.ee_translation_per_step
-            gripper_actions = self.gripper_bounds[gripper_idx]
+            gripper_actions = self.gripper_centers[gripper_idx.clamp(0, len(self.gripper_centers) - 1)]
             action_chunks = torch.cat([ee_actions, gripper_actions], dim=-1)
         return action_chunks
 
@@ -174,13 +176,17 @@ def build_policy(
     policy_type: PolicyType,
     state_dim: int,
     action_dim: int,
-    chunk_size: int
+    chunk_size: int,
+    d_model,
+    depth,
 ) -> BasePolicy:
     if policy_type == "obstacle":
         return ObstaclePolicy(
             action_dim=action_dim,
             state_dim=state_dim,
-            chunk_size=chunk_size
+            chunk_size=chunk_size,
+            d_model=d_model,
+            depth=depth
         )
     if policy_type == "multitask":
         return MultiTaskPolicy(

@@ -122,8 +122,8 @@ def load_checkpoint(
         state_dim=state_dim,
         action_dim=action_dim,
         chunk_size=chunk_size,
-        #d_model=d_model,
-        #depth=depth,
+        d_model=d_model,
+        depth=depth,
     )
     model.load_state_dict(ckpt["model_state_dict"])
     model.to(device)
