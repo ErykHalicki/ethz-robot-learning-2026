@@ -61,7 +61,7 @@ class ObstaclePolicy(BasePolicy):
         self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
 
-        self.ee_loss_weight = 0.5
+        self.ee_loss_weight = 0.8
         self.loss_function = torch.nn.CrossEntropyLoss()
         self.softmax = torch.nn.Softmax(dim=-1)
 
