@@ -49,75 +49,97 @@ class ObstaclePolicy(BasePolicy):
         **kwargs
     ) -> None:
         super().__init__(*args, **kwargs)
-        self.gripper_action_dim = 21
-        self.gripper_bounds=torch.linspace(-0.2, 1.8, self.gripper_action_dim)
-        self.action_dim = 7 #[0, +x, +y, +z, -x, -y, -z]
+        # model size parameters
+        self.gripper_action_dim = 10
+        self.ee_action_dim = 7 #[0, +x, +y, +z, -x, -y, -z]
         self.num_layers = num_layers 
+        self.h_dim = h_dim
+
         self.activation = nn.GELU()
         self.input_layer = nn.Linear(self.state_dim,h_dim)
         self.layer_norms = nn.ModuleList([nn.LayerNorm([h_dim]) for _ in range(self.num_layers)])
         self.hidden_layers = nn.ModuleList([nn.Linear(h_dim, h_dim) for _ in range(self.num_layers)])
-        self.ee_output_layer = nn.Linear(h_dim, self.action_dim*self.chunk_size)
+        self.ee_output_layer = nn.Linear(h_dim, self.ee_action_dim*self.chunk_size)
         self.gripper_output_layer = nn.Linear(h_dim, self.gripper_action_dim*self.chunk_size)
-        # multiplying by 2 to get a positive and negative direction for each axis
+
+        self.ee_loss_weight = 0.5
+        self.loss_function = torch.nn.CrossEntropyLoss()
+        self.softmax = torch.nn.Softmax(dim=-1)
+
+        self.gripper_bounds = torch.linspace(-0.2, 1.75, self.gripper_action_dim)
+        self.ee_action_map = torch.tensor([[0.,0.,0.],  # 0 movement
+                                          [1.,0.,0.],   # +x
+                                          [0.,1.,0.],   # +y
+                                          [0.,0.,1.],   # +z
+                                          [-1.,0.,0.],  # -x
+                                          [0.,-1.,0.],  # -y
+                                          [0.,0.,-1.]]) # -z
+        self.ee_translation_per_step = 0.01
 
     def forward(
         self, x
     ) -> torch.Tensor:
         """
         x: must have batch dim
-        Return predicted action chunk of shape (B, chunk_size, action_dim).
+        returns a pair of action logits (ee, gripper)
+        ee: [B, chunk_dim, 7]
+        gripper: [B, chunk_dim, 21]
         """
         x = self.activation(self.input_layer(x))
         for i in range(self.num_layers):
             x = self.activation(self.hidden_layers[i](self.layer_norms[i](x))) + x
-        x = self.output_layer(x)
-        return torch.reshape(x, [x.size(0), self.chunk_size, self.action_dim*2])
-        #TODO CHANGE TO OUTPUT MULTIPLE ACTION SPACES (1 for gripper and one for ee) 
-        # outputs logits
+        gripper_out = self.gripper_output_layer(x)
+        ee_out = self.ee_output_layer(x)
+        return {"ee": torch.reshape(ee_out, [x.size(0), self.chunk_size, self.ee_action_dim]),
+                "gripper": torch.reshape(gripper_out, [x.size(0), self.chunk_size, self.gripper_action_dim])}
 
     def compute_loss(
-        self,
+        self, state: torch.Tensor, action_chunk: torch.Tensor
     ) -> torch.Tensor:
-        raise NotImplementedError
+        predicted_action_chunks = self.forward(state)
+        target_action_chunks = self.discretize_action(action_chunk)
+        ee_loss = self.loss_function(predicted_action_chunks["ee"].flatten(end_dim=-2), target_action_chunks["ee"].flatten())
+        gripper_loss = self.loss_function(predicted_action_chunks["gripper"].flatten(end_dim=-2), target_action_chunks["gripper"].flatten())
+        return (ee_loss * self.ee_loss_weight + gripper_loss* (1.0-self.ee_loss_weight))
 
     def sample_actions(
         self,
         state: torch.Tensor,
     ) -> torch.Tensor:
-        # TODO need to softmax and sample logits of output actions
-        # then, convert to original action space (xyz) based
-        # on denormalization params (move 0.01 per time step)
-        # and concat the gripper to create R4 action vector
-        return self.forward(state)
+        with torch.no_grad():
+            action_logits = self.forward(state)
+            ee_probabilities = self.softmax(action_logits["ee"]).flatten(end_dim=-2)
+            gripper_probabilities = self.softmax(action_logits["gripper"]).flatten(end_dim=-2)
+            gripper_idx = torch.multinomial(gripper_probabilities, num_samples=1).reshape([state.size(0), self.chunk_size, 1])
+            ee_idx = torch.multinomial(ee_probabilities, num_samples=1).reshape([state.size(0), self.chunk_size])
+            ee_actions = self.ee_action_map[ee_idx]*self.ee_translation_per_step
+            gripper_actions = self.gripper_bounds[gripper_idx]
+            action_chunks = torch.cat([ee_actions, gripper_actions], dim=-1)
+        return action_chunks
 
     def discretize_action(self, action):
         '''
         Action should be [B, action_chunk, action_dim]
-        Returns seperate discretized actions for ee and gripper [B, action_chunk, 2]
-        ([+x,+y, +z, -x, -y, -z], [-0.1, 0.0, 0.1, 0.2 ..., 1.1])
+        Returns seperate discretized actions for ee and gripper {[B, action_chunk], [B,action_chunk]}
+        ([0, +x,+y, +z, -x, -y, -z], [-0.2, 0.0, 0.1, 0.2 ..., 1.8])
         '''
         ee_movement_thresh = 0.005
-        decimals = 3
 
         positive_mask = torch.zeros_like(action[:, :, :3], dtype=bool)
         negative_mask = torch.zeros_like(action[:, :, :3], dtype=bool)
-        positive_mask = action[:, :, :3].round(decimals=decimals)>=ee_movement_thresh
-        negative_mask = action[:, :, :3].round(decimals=decimals)<=-ee_movement_thresh
+        positive_mask = action[:, :, :3]>=ee_movement_thresh
+        negative_mask = action[:, :, :3]<=-ee_movement_thresh
 
         movement_mask = torch.cat((positive_mask, negative_mask), dim=2).int()
         no_movement_mask = (movement_mask == 0).all(dim=-1, keepdim=True).int()
         mask = torch.cat([no_movement_mask, movement_mask], dim=-1)
         ee_idx = (mask.argmax(dim=-1))
         # if multiple movements happen at once, prioritizes lowest idx (kind of arbitrary but should work)
-
-        gripper_idx = torch.bucketize(action[:,:, 3], boundaries=self.gripper_bounds)
+        gripper_action = action[:,:, 3].clone()
+        gripper_idx = torch.bucketize(gripper_action, boundaries=self.gripper_bounds)
 
         return {"ee": ee_idx, "gripper": gripper_idx}
     
-    #def one_hotify_action(self, action_idx):
-    #   return {"ee": nn.functional.one_hot(action_idx[:, :, 0], self.action_dim), 
-    #          "gripper": nn.functional.one_hot(action_idx[:, :, 1], self.gripper_dim)}
 
 # TODO: Students implement MultiTaskPolicy here.
 class MultiTaskPolicy(BasePolicy):

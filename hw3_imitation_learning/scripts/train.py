@@ -46,13 +46,18 @@ def train_one_epoch(
         states, action_chunks = batch
         states = states.to(device)
         action_chunks = action_chunks.to(device)
-        #out = model(states)
-        action_idxs = model.discretize_action(action_chunks)
-        # This mostly: Get states and action_chunks onto the correct device, compute the loss, and step the optimizer.
-    
+        optimizer.zero_grad()
+        loss = model.compute_loss(states, action_chunks)
+        loss.backward()
+        optimizer.step()
+
+        total_loss += loss.item()
+        n_batches+=1
+        print(f"Batch {n_batches} loss: {loss.round(decimals=2).item()}")
+
+        model.sample_actions(states)
 
     return total_loss / max(n_batches, 1)
-
 
 @torch.no_grad()
 def evaluate(
@@ -66,7 +71,13 @@ def evaluate(
 
     for batch in loader:
         states, action_chunks = batch
-        # TODO: Implement the evaluation step for one batch here.
+        states = states.to(device)
+        action_chunks = action_chunks.to(device)
+        with torch.no_grad():
+            loss = model.compute_loss(states, action_chunks)
+
+        total_loss += loss.item()
+        n_batches+=1
 
     return total_loss / max(n_batches, 1)
 
