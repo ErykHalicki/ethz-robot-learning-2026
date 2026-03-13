@@ -131,6 +131,7 @@ class BaseSO100SimEnv:
     keyframe: str = "student_start"
     use_mocap: bool = True
     seed: int | None = None
+    headless: bool = False
 
     def __post_init__(self) -> None:
         self.model = mujoco.MjModel.from_xml_path(str(self.xml_path))
@@ -182,9 +183,10 @@ class BaseSO100SimEnv:
 
         self._init_scene_specific()
 
-        self.renderer = mujoco.Renderer(
-            self.model, height=self.render_h, width=self.render_w
-        )
+        if not self.headless:
+            self.renderer = mujoco.Renderer(
+                self.model, height=self.render_h, width=self.render_w
+            )
 
         self.reset()
 

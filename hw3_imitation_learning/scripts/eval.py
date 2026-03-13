@@ -201,6 +201,7 @@ def main() -> None:
             goal_cube=goal_schedule[0],
             shuffle_cubes=not args.no_shuffle,
             seed=args.seed,
+            headless=args.headless,
         )
     else:
         env = SO100SimEnv(
@@ -210,6 +211,7 @@ def main() -> None:
             use_mocap=use_mocap,
             obstacle_mode="adversarial" if args.adversarial_obstacle else "train",
             seed=args.seed,
+            headless=args.headless,
         )
 
     if not args.headless:
