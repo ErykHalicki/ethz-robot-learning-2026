@@ -24,10 +24,8 @@ from hw3.dataset import (
 )
 from hw3.model import BasePolicy, build_policy
 
-# TODO: Any imports you want from torch or other libraries we use. Not allowed: libraries we don't use
 from torch.utils.data import DataLoader, random_split
 
-# TODO: Choose your own hyperparameters!
 EPOCHS = 1
 BATCH_SIZE = 64
 LR = 1e-4
@@ -43,14 +41,15 @@ def train_one_epoch(
     model.train()
     total_loss = 0.0
     n_batches = 0
-
+    
     for batch in loader:
         states, action_chunks = batch
         states = states.to(device)
         action_chunks = action_chunks.to(device)
-        print(states.shape)
-
+        #out = model(states)
+        action_idxs = model.discretize_action(action_chunks)
         # This mostly: Get states and action_chunks onto the correct device, compute the loss, and step the optimizer.
+    
 
     return total_loss / max(n_batches, 1)
 
@@ -73,7 +72,6 @@ def evaluate(
 
 
 def main() -> None:
-    # TODO: You may add any cli arguments that make life easier for you like learning rate etc.
     parser = argparse.ArgumentParser(description="Train action-chunking policy.")
     parser.add_argument(
         "--zarr", type=Path, required=True, help="Path to processed .zarr store."
@@ -160,15 +158,14 @@ def main() -> None:
         args.policy,
         state_dim=states.shape[1],
         action_dim=actions.shape[1],
-        # TODO: build with your desired specifications
+        chunk_size=args.chunk_size
     ).to(device)
 
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Model parameters: {n_params:,}")
 
-    # TODO: implement an optimizer and scheduler
-    # optimizer =
-    # scheduler =
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 2, gamma=0.5)
 
     # ── training loop ─────────────────────────────────────────────────
     best_val = float("inf")
@@ -212,10 +209,16 @@ def main() -> None:
                     "model_state_dict": model.state_dict(),
                     "optimizer_state_dict": optimizer.state_dict(),
                     "normalizer": {
-                        "state_mean": normalizer.state_mean,
-                        "state_std": normalizer.state_std,
-                        "action_mean": normalizer.action_mean,
-                        "action_std": normalizer.action_std,
+                        #"state_mean": normalizer.state_mean,
+                        #"state_std": normalizer.state_std,
+                        #"action_mean": normalizer.action_mean,
+                        #"action_std": normalizer.action_std,
+                        "state_mean": 0,
+                        "state_std": 1,
+                        "action_mean": 0,
+                        "action_std": 1,
+                        # changed this because i want to
+                        # discretize my action space, and it is getting in the way
                     },
                     "chunk_size": args.chunk_size,
                     "policy_type": args.policy,
