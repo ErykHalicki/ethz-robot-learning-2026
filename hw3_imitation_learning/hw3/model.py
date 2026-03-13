@@ -82,8 +82,8 @@ class ObstaclePolicy(BasePolicy):
         """
         x: must have batch dim
         returns a pair of action logits (ee, gripper)
-        ee: [B, chunk_dim, 7]
-        gripper: [B, chunk_dim, 21]
+        ee: [B, chunk_dim, ee_action_dim]
+        gripper: [B, chunk_dim, gripper_action_dim]
         """
         x = self.activation(self.input_layer(x))
         for i in range(self.num_layers):
