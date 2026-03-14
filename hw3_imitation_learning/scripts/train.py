@@ -270,6 +270,7 @@ def main() -> None:
         save_name = f"epoch_{epoch}_{action_space}_{args.policy}.pt"
         save_path = ckpt_dir / save_name
         save_model(save_path)
+        save_model(save_path.parent / "latest.pt")
 
         print(
             f"Epoch {epoch:3d}/{args.epochs} | "
