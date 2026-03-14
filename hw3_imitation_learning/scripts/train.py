@@ -229,12 +229,12 @@ def main() -> None:
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
                 "normalizer": {
-                    #"state_mean": normalizer.state_mean,
-                    #"state_std": normalizer.state_std,
+                    "state_mean": normalizer.state_mean,
+                    "state_std": normalizer.state_std,
                     #"action_mean": normalizer.action_mean,
                     #"action_std": normalizer.action_std,
-                    "state_mean": 0,
-                    "state_std": 1,
+                    #"state_mean": 0,
+                    #"state_std": 1,
                     "action_mean": 0,
                     "action_std": 1,
                     # changed this because i want to
