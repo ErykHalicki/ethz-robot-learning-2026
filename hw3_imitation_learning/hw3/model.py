@@ -249,7 +249,7 @@ def build_policy(
     depth,
 ) -> BasePolicy:
     if policy_type == "obstacle":
-        return MSEPolicy(
+        return ObstaclePolicy(
             action_dim=action_dim,
             state_dim=state_dim,
             chunk_size=chunk_size,
