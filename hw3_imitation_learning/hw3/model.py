@@ -61,7 +61,7 @@ class ObstaclePolicy(BasePolicy):
         self.hidden_layers = nn.ModuleList([nn.Linear(d_model, d_model) for _ in range(self.depth)])
         self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
-        self.dropout = torch.nn.Dropout(p=0.25)
+        self.dropout = torch.nn.Dropout(p=0.175)
 
         zero_movement_weight = 0.015
         self.log_var_ee = nn.Parameter(torch.zeros(1))
@@ -115,9 +115,9 @@ class ObstaclePolicy(BasePolicy):
                                      target_action_chunks["ee"].flatten())
         gripper_loss = self.gripper_loss_function(predicted_action_chunks["gripper"].flatten(end_dim=-2), 
                                           target_action_chunks["gripper"].flatten())
-        self.log_var_ee.data.clamp_(-4, 4)
-        self.log_var_gripper.data.clamp_(-4, 4)
-        return(ee_loss * torch.exp(-self.log_var_ee) + self.log_var_ee +
+        self.log_var_ee.data.clamp_(0, 10)
+        self.log_var_gripper.data.clamp_(0, 10)
+        return (ee_loss * torch.exp(-self.log_var_ee) + self.log_var_ee +
                 gripper_loss * torch.exp(-self.log_var_gripper) + self.log_var_gripper)
                 #learned gripper - ee loss ratio
 
@@ -126,8 +126,8 @@ class ObstaclePolicy(BasePolicy):
         state: torch.Tensor,
     ) -> torch.Tensor:
         self.eval()
-        ee_temp = 0.3
-        gripper_temp = 1.0
+        ee_temp = 0.5
+        gripper_temp = 0.5
         with torch.no_grad():
             action_logits = self.forward(state)
             #action_logits["ee"][:, :, 0] /= 5

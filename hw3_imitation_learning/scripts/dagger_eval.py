@@ -81,7 +81,7 @@ def run_dagger_episode(
     success = False
     human_control = False
     n_takeover_steps = 0
-    recording_this_episode = False  # track if we recorded anything
+    recording_this_episode = True  # track if we recorded anything
     # Grace period: after success is detected during human control, keep
     # running for GRACE_SECS more so at least one full chunk is recorded.
     GRACE_SECS = 1.7
@@ -141,7 +141,7 @@ def run_dagger_episode(
                 )
 
         # ── record state BEFORE step (if human is controlling) ────────
-        if human_control:
+        if True: #human_control:
             # Record current state for DAgger
             joints = env.get_joint_angles()
             ee_state = env.get_ee_state()
@@ -159,6 +159,7 @@ def run_dagger_episode(
                 action_gripper,
                 obstacle_state,
             )
+        if human_control:
             n_takeover_steps += 1
 
         # ── policy inference (if not in human control) ────────────────
@@ -182,18 +183,11 @@ def run_dagger_episode(
 
         # ── check termination ─────────────────────────────────────────
         success = check_success(env)
-        if success:
-            if human_control and grace_steps_remaining is None:
-                # Start grace period so we keep recording
-                grace_steps_remaining = int(GRACE_SECS / env.dt_ctrl)
-                print(f"  Cube in bin! Recording {grace_steps_remaining} more "
+        if success and grace_steps_remaining is None:
+            # Start grace period so we keep recording
+            grace_steps_remaining = model.chunk_size
+            print(f"  Cube in bin! Recording {grace_steps_remaining} more "
                       f"steps ({GRACE_SECS}s grace period)...")
-            elif not human_control:
-                # Policy mode — terminate immediately
-                if recording_this_episode:
-                    writer.end_episode()
-                    print(f"  DAgger episode saved ({n_takeover_steps} takeover steps)")
-                return success, n_takeover_steps, False, False
 
         # Tick down grace period
         if grace_steps_remaining is not None:
@@ -207,9 +201,11 @@ def run_dagger_episode(
         if check_cube_out_of_bounds(env):
             print("  Cube out of bounds — early termination.")
             if recording_this_episode:
-                writer.end_episode()
-                print(f"  DAgger episode saved ({n_takeover_steps} takeover steps)")
-            return False, n_takeover_steps, False, False
+                writer.discard_episode()
+                print("  Episode discarded — replaying same scenario.")
+                # Restore RNG so next reset() reproduces the same episode
+                env.rng.bit_generator.state = rng_state_before_reset
+                return False, 0, False, True  # replay=True
 
         # ── render (skip in headless mode) ────────────────────────
         if headless:
@@ -281,7 +277,8 @@ def run_dagger_episode(
         )
 
         cv2.imshow("DAgger Eval", img)
-        time.sleep(env.dt_ctrl)
+        if human_control:
+            time.sleep(0.05)
 
     # Episode ended by reaching max_steps
     if recording_this_episode:
@@ -357,7 +354,8 @@ def main():
         render_w=640,
         render_h=480,
         use_mocap=use_mocap,
-        obstacle_mode="adversarial",
+        #obstacle_mode="adversarial",
+        obstacle_mode="train",
         seed=args.seed,
     )
 
