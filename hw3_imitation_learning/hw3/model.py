@@ -61,8 +61,8 @@ class ObstaclePolicy(BasePolicy):
         self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
 
-        self.ee_loss_weight = 0.6
-        zero_movement_weight = 0.05
+        self.ee_loss_weight = 0.4
+        zero_movement_weight = 0.02
         ee_ce_weights = torch.zeros([7])
         ee_ce_weights[:] = (1.-zero_movement_weight)/6.
         ee_ce_weights[0] = zero_movement_weight
