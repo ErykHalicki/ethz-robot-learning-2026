@@ -190,7 +190,7 @@ def main() -> None:
     print(f"Model parameters: {n_params:,}")
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.8)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 100, gamma=0.5)
 
     # ── training loop ─────────────────────────────────────────────────
     best_val = float("inf")
@@ -269,7 +269,7 @@ def main() -> None:
 
         print(
             f"Epoch {epoch:3d}/{args.epochs} | "
-            f"train {train_loss:.6f} | val {val_loss:.6f}{tag} | lr: {optimizer.state_dict()['param_groups'][0]['lr']}"
+            f"train {train_loss:.6f} | val {val_loss:.6f}{tag}"
         )
 
     print(f"\nBest val loss: {best_val:.6f}")
