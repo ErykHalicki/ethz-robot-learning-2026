@@ -61,9 +61,9 @@ class ObstaclePolicy(BasePolicy):
         self.hidden_layers = nn.ModuleList([nn.Linear(d_model, d_model) for _ in range(self.depth)])
         self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
-        self.dropout = torch.nn.Dropout(p=0.15)
+        self.dropout = torch.nn.Dropout(p=0.25)
 
-        zero_movement_weight = 0.035
+        zero_movement_weight = 0.015
         self.log_var_ee = nn.Parameter(torch.zeros(1))
         self.log_var_gripper = nn.Parameter(torch.zeros(1))
         ee_ce_weights = torch.zeros([7])
@@ -124,8 +124,8 @@ class ObstaclePolicy(BasePolicy):
         state: torch.Tensor,
     ) -> torch.Tensor:
         self.eval()
-        ee_temp = 0.2
-        gripper_temp = 0.7
+        ee_temp = 0.3
+        gripper_temp = 1.0
         with torch.no_grad():
             action_logits = self.forward(state)
             #action_logits["ee"][:, :, 0] /= 5
