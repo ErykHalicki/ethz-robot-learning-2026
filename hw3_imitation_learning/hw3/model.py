@@ -166,6 +166,49 @@ class ObstaclePolicy(BasePolicy):
         return {"ee": ee_idx, "gripper": gripper_idx}
     
 
+class MSEPolicy(BasePolicy):
+    """Predicts continuous action chunks with an MSE loss.
+
+    Same MLP backbone as ObstaclePolicy but outputs raw (B, chunk_size, action_dim)
+    without any action discretization.
+    """
+
+    def __init__(
+        self,
+        d_model: int = 200,
+        depth: int = 8,
+        *args,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.depth = depth
+        self.d_model = d_model
+
+        self.activation = nn.GELU()
+        self.input_norm = nn.LayerNorm([self.state_dim])
+        self.input_layer = nn.Linear(self.state_dim, d_model)
+        self.layer_norms = nn.ModuleList([nn.LayerNorm([d_model]) for _ in range(depth)])
+        self.hidden_layers = nn.ModuleList([nn.Linear(d_model, d_model) for _ in range(depth)])
+        self.output_layer = nn.Linear(d_model, self.action_dim * self.chunk_size)
+        self.dropout = nn.Dropout(p=0.1)
+        self.loss_fn = nn.MSELoss()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.input_norm(x)
+        x = self.dropout(self.activation(self.input_layer(x)))
+        for norm, layer in zip(self.layer_norms, self.hidden_layers):
+            x = self.dropout(self.activation(layer(norm(x))))
+        return self.output_layer(x).reshape(x.size(0), self.chunk_size, self.action_dim)
+
+    def compute_loss(self, state: torch.Tensor, action_chunk: torch.Tensor) -> torch.Tensor:
+        return self.loss_fn(self.forward(state), action_chunk)
+
+    def sample_actions(self, state: torch.Tensor) -> torch.Tensor:
+        self.eval()
+        with torch.no_grad():
+            return self.forward(state)
+
+
 # TODO: Students implement MultiTaskPolicy here.
 class MultiTaskPolicy(BasePolicy):
     """Goal-conditioned policy for the multicube scene."""
@@ -204,7 +247,7 @@ def build_policy(
     depth,
 ) -> BasePolicy:
     if policy_type == "obstacle":
-        return ObstaclePolicy(
+        return MSEPolicy(
             action_dim=action_dim,
             state_dim=state_dim,
             chunk_size=chunk_size,
