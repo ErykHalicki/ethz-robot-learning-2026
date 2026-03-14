@@ -55,7 +55,6 @@ def train_one_epoch(
 
         total_loss += loss.item()
         n_batches+=1
-        print(f"Batch {n_batches} loss: {loss.round(decimals=2).item()}")
 
         model.sample_actions(states)
 
