@@ -58,13 +58,12 @@ class ObstaclePolicy(BasePolicy):
         self.input_layer = nn.Linear(self.state_dim,d_model)
         self.input_norm = nn.LayerNorm([self.state_dim])
         self.layer_norms = nn.ModuleList([nn.LayerNorm([d_model]) for _ in range(self.depth)])
-        self.hidden_layers_expand = nn.ModuleList([nn.Linear(d_model, int(d_model*2)) for _ in range(self.depth)])
-        self.hidden_layers_contract = nn.ModuleList([nn.Linear(int(d_model*2), d_model) for _ in range(self.depth)])
+        self.hidden_layers = nn.ModuleList([nn.Linear(d_model, d_model) for _ in range(self.depth)])
         self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
         self.dropout = torch.nn.Dropout(p=0.2)
 
-        zero_movement_weight = 0.005
+        zero_movement_weight = 0.02
         self.log_var_ee = nn.Parameter(torch.zeros(1))
         self.log_var_gripper = nn.Parameter(torch.zeros(1))
         ee_ce_weights = torch.zeros([7])
@@ -82,7 +81,7 @@ class ObstaclePolicy(BasePolicy):
                                           [-1.,0.,0.],  # -x
                                           [0.,-1.,0.],  # -y
                                           [0.,0.,-1.]]) # -z
-        self.ee_translation_per_step = 0.0075
+        self.ee_translation_per_step = 0.0065
         
         self.register_buffer('gripper_centers', (gripper_bounds[:-1] + gripper_bounds[1:]) / 2)
         self.register_buffer('gripper_bounds', gripper_bounds)
@@ -100,9 +99,7 @@ class ObstaclePolicy(BasePolicy):
         x = self.input_norm(x)
         x = self.dropout(self.activation(self.input_layer(x)))
         for i in range(self.depth):
-            original_x = x
-            x = self.dropout(self.activation(self.hidden_layers_expand[i](self.layer_norms[i](x))))
-            x = self.hidden_layers_contract[i](x) + original_x
+            x = self.dropout(self.activation(self.hidden_layers[i](self.layer_norms[i](x))))
         gripper_out = self.gripper_output_layer(x)
         ee_out = self.ee_output_layer(x)
         return {"ee": torch.reshape(ee_out, [x.size(0), self.chunk_size, self.ee_action_dim]),
