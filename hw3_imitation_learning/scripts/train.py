@@ -56,8 +56,6 @@ def train_one_epoch(
         total_loss += loss.item()
         n_batches+=1
 
-        model.sample_actions(states)
-
     return total_loss / max(n_batches, 1)
 
 @torch.no_grad()
@@ -192,7 +190,7 @@ def main() -> None:
     print(f"Model parameters: {n_params:,}")
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 50, gamma=0.8)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.8)
 
     # ── training loop ─────────────────────────────────────────────────
     best_val = float("inf")
