@@ -102,7 +102,7 @@ class ObstaclePolicy(BasePolicy):
         target_action_chunks = self.discretize_action(action_chunk)
         ee_loss = self.loss_function(predicted_action_chunks["ee"].flatten(end_dim=-2), target_action_chunks["ee"].flatten())
         gripper_loss = self.loss_function(predicted_action_chunks["gripper"].flatten(end_dim=-2), target_action_chunks["gripper"].flatten())
-        return (ee_loss * self.ee_loss_weight + gripper_loss* (1.0-self.ee_loss_weight))
+        return (ee_loss * self.ee_loss_weight) + (gripper_loss* (1.0-self.ee_loss_weight))
 
     def sample_actions(
         self,

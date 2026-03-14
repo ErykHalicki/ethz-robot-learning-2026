@@ -192,7 +192,7 @@ def main() -> None:
     print(f"Model parameters: {n_params:,}")
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 30, gamma=0.5)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 50, gamma=0.8)
 
     # ── training loop ─────────────────────────────────────────────────
     best_val = float("inf")
