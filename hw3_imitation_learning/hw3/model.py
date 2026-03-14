@@ -49,7 +49,7 @@ class ObstaclePolicy(BasePolicy):
     ) -> None:
         super().__init__(*args, **kwargs)
         # model size parameters
-        self.gripper_action_dim = 25
+        self.gripper_action_dim = 15
         self.ee_action_dim = 7 #[0, +x, +y, +z, -x, -y, -z]
         self.depth = depth 
         self.d_model = d_model
@@ -63,8 +63,9 @@ class ObstaclePolicy(BasePolicy):
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
         self.dropout = torch.nn.Dropout(p=0.15)
 
-        zero_movement_weight = 0.02
-        self.ee_loss_weight = 0.2
+        zero_movement_weight = 0.015
+        self.log_var_ee = nn.Parameter(torch.zeros(1))
+        self.log_var_gripper = nn.Parameter(torch.zeros(1))
         ee_ce_weights = torch.zeros([7])
         ee_ce_weights[:] = (1.-zero_movement_weight)/6.
         ee_ce_weights[0] = zero_movement_weight
@@ -80,7 +81,7 @@ class ObstaclePolicy(BasePolicy):
                                           [-1.,0.,0.],  # -x
                                           [0.,-1.,0.],  # -y
                                           [0.,0.,-1.]]) # -z
-        self.ee_translation_per_step = 0.0075
+        self.ee_translation_per_step = 0.006
         
         self.register_buffer('gripper_centers', (gripper_bounds[:-1] + gripper_bounds[1:]) / 2)
         self.register_buffer('gripper_bounds', gripper_bounds)
@@ -114,7 +115,9 @@ class ObstaclePolicy(BasePolicy):
                                      target_action_chunks["ee"].flatten())
         gripper_loss = self.gripper_loss_function(predicted_action_chunks["gripper"].flatten(end_dim=-2), 
                                           target_action_chunks["gripper"].flatten())
-        return self.ee_loss_weight * ee_loss + (1 - self.ee_loss_weight) * gripper_loss
+        return(ee_loss * torch.exp(-self.log_var_ee) + self.log_var_ee +
+                gripper_loss * torch.exp(-self.log_var_gripper) + self.log_var_gripper)
+                #learned gripper - ee loss ratio
 
     def sample_actions(
         self,
