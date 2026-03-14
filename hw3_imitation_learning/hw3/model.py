@@ -124,8 +124,8 @@ class ObstaclePolicy(BasePolicy):
         state: torch.Tensor,
     ) -> torch.Tensor:
         self.eval()
-        ee_temp = 0.5
-        gripper_temp = 1.5
+        ee_temp = 0.2
+        gripper_temp = 0.7
         with torch.no_grad():
             action_logits = self.forward(state)
             #action_logits["ee"][:, :, 0] /= 5
