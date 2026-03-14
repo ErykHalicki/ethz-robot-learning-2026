@@ -100,9 +100,8 @@ class ObstaclePolicy(BasePolicy):
         x = self.dropout(self.activation(self.input_layer(x)))
         for i in range(self.depth):
             original_x = x
-            x = self.activation(self.hidden_layers_expand[i](self.layer_norms[i](x)))
-            x = self.dropout(self.hidden_layers_contract[i](x))
-            x = x + original_x #residual connection
+            x = self.dropout(self.activation(self.hidden_layers_expand[i](self.layer_norms[i](x))))
+            x = self.hidden_layers_contract[i](x) + original_x
         gripper_out = self.gripper_output_layer(x)
         ee_out = self.ee_output_layer(x)
         return {"ee": torch.reshape(ee_out, [x.size(0), self.chunk_size, self.ee_action_dim]),
