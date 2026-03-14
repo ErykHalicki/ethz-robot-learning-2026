@@ -66,10 +66,10 @@ class ObstaclePolicy(BasePolicy):
         zero_movement_weight = 0.035
         self.log_var_ee = nn.Parameter(torch.zeros(1))
         self.log_var_gripper = nn.Parameter(torch.zeros(1))
-        ee_ce_weights = torch.zeros([7])
-        ee_ce_weights[:] = (1.-zero_movement_weight)/6.
-        ee_ce_weights[0] = zero_movement_weight
-        self.ee_loss_function = torch.nn.CrossEntropyLoss(weight=ee_ce_weights)
+        self.ee_ce_weights = nn.Parameter(torch.zeros([7]))
+        self.ee_ce_weights[:] = (1.-self.zero_movement_weight)/6.
+        self.ee_ce_weights[0] = self.zero_movement_weight
+        self.ee_loss_function = torch.nn.CrossEntropyLoss(weight=self.ee_ce_weights)
         self.gripper_loss_function = torch.nn.CrossEntropyLoss()
         self.softmax = torch.nn.Softmax(dim=-1)
 
