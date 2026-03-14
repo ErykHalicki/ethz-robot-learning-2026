@@ -29,8 +29,8 @@ from hw3.model import BasePolicy, build_policy
 from torch.utils.data import DataLoader, random_split
 
 EPOCHS = 100
-BATCH_SIZE = 64
-LR = 1e-3
+BATCH_SIZE = 256
+LR = 4e-3
 VAL_SPLIT = 0.2
 
 
