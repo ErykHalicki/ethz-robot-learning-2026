@@ -63,7 +63,7 @@ class ObstaclePolicy(BasePolicy):
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
         self.dropout = torch.nn.Dropout(p=0.15)
 
-        zero_movement_weight = 0.015
+        zero_movement_weight = 0.035
         self.log_var_ee = nn.Parameter(torch.zeros(1))
         self.log_var_gripper = nn.Parameter(torch.zeros(1))
         ee_ce_weights = torch.zeros([7])
@@ -73,7 +73,7 @@ class ObstaclePolicy(BasePolicy):
         self.gripper_loss_function = torch.nn.CrossEntropyLoss()
         self.softmax = torch.nn.Softmax(dim=-1)
 
-        gripper_bounds = torch.linspace(-0.3, 1.8, self.gripper_action_dim)
+        gripper_bounds = torch.linspace(-0.3, 2.0, self.gripper_action_dim)
         ee_action_map = torch.tensor([[0.,0.,0.],  # 0 movement
                                           [1.,0.,0.],   # +x
                                           [0.,1.,0.],   # +y
