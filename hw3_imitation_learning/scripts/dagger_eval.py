@@ -141,7 +141,7 @@ def run_dagger_episode(
                 )
 
         # ── record state BEFORE step (if human is controlling) ────────
-        if True: #human_control:
+        if human_control:
             # Record current state for DAgger
             joints = env.get_joint_angles()
             ee_state = env.get_ee_state()
