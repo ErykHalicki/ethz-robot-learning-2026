@@ -267,10 +267,10 @@ def main() -> None:
             save_path = ckpt_dir / save_name
             save_model(save_path)
             tag = " ✓ best"
-        save_name = f"epoch_{epoch}_{action_space}_{args.policy}.pt"
-        save_path = ckpt_dir / save_name
-        save_model(save_path)
-        save_model(save_path.parent / "latest.pt")
+        #save_name = f"epoch_{epoch}_{action_space}_{args.policy}.pt"
+        #save_path = ckpt_dir / save_name
+        #save_model(save_path)
+        save_model(ckpt_dir.parent / "latest.pt")
 
         print(
             f"Epoch {epoch:3d}/{args.epochs} | "
