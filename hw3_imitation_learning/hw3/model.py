@@ -49,7 +49,7 @@ class ObstaclePolicy(BasePolicy):
     ) -> None:
         super().__init__(*args, **kwargs)
         # model size parameters
-        self.gripper_action_dim = 15
+        self.gripper_action_dim = 25
         self.ee_action_dim = 7 #[0, +x, +y, +z, -x, -y, -z]
         self.depth = depth 
         self.d_model = d_model
@@ -64,7 +64,7 @@ class ObstaclePolicy(BasePolicy):
         self.dropout = torch.nn.Dropout(p=0.15)
 
         zero_movement_weight = 0.02
-        self.ee_loss_weight = 0.35
+        self.ee_loss_weight = 0.2
         ee_ce_weights = torch.zeros([7])
         ee_ce_weights[:] = (1.-zero_movement_weight)/6.
         ee_ce_weights[0] = zero_movement_weight
