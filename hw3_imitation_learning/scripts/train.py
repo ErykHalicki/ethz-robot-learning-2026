@@ -30,7 +30,7 @@ from torch.utils.data import DataLoader, random_split
 
 EPOCHS = 100
 BATCH_SIZE = 256
-LR = 2e-3
+LR = 1e-2
 VAL_SPLIT = 0.2
 
 
