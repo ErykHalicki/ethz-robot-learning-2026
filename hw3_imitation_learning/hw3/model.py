@@ -115,8 +115,8 @@ class ObstaclePolicy(BasePolicy):
                                      target_action_chunks["ee"].flatten())
         gripper_loss = self.gripper_loss_function(predicted_action_chunks["gripper"].flatten(end_dim=-2), 
                                           target_action_chunks["gripper"].flatten())
-        self.log_var_ee = torch.clamp(self.log_var_ee, -4, 4)
-        self.log_var_gripper = torch.clamp(self.log_var_gripper, -4, 4)
+        self.log_var_ee.data.clamp_(-4, 4)
+        self.log_var_gripper.data.clamp_(-4, 4)
         return(ee_loss * torch.exp(-self.log_var_ee) + self.log_var_ee +
                 gripper_loss * torch.exp(-self.log_var_gripper) + self.log_var_gripper)
                 #learned gripper - ee loss ratio
