@@ -62,7 +62,7 @@ class ObstaclePolicy(BasePolicy):
         self.hidden_layers_contract = nn.ModuleList([nn.Linear(int(d_model*2), d_model) for _ in range(self.depth)])
         self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
-        self.dropout = torch.nn.Dropout(p=0.1)
+        self.dropout = torch.nn.Dropout(p=0.2)
 
         zero_movement_weight = 0.015
         self.log_var_ee = nn.Parameter(torch.zeros(1))
@@ -82,7 +82,7 @@ class ObstaclePolicy(BasePolicy):
                                           [-1.,0.,0.],  # -x
                                           [0.,-1.,0.],  # -y
                                           [0.,0.,-1.]]) # -z
-        self.ee_translation_per_step = 0.005
+        self.ee_translation_per_step = 0.0075
         
         self.register_buffer('gripper_centers', (gripper_bounds[:-1] + gripper_bounds[1:]) / 2)
         self.register_buffer('gripper_bounds', gripper_bounds)
