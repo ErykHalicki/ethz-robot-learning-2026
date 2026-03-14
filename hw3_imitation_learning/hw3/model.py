@@ -74,9 +74,14 @@ class ObstaclePolicy(BasePolicy):
                                           [0.,-1.,0.],  # -y
                                           [0.,0.,-1.]]) # -z
         self.ee_translation_per_step = 0.01
+        zero_weight = 0.1
+        ee_weights = torch.zeros([7])
+        ee_weights[:] = (1.-zero_weight)/6.
+        ee_weights[0] = zero_weight
         self.register_buffer('gripper_centers', (gripper_bounds[:-1] + gripper_bounds[1:]) / 2)
         self.register_buffer('gripper_bounds', gripper_bounds)
         self.register_buffer('ee_action_map', ee_action_map)
+        self.register_buffer('ee_weights', ee_weights)
 
     def forward(
         self, x
@@ -100,8 +105,12 @@ class ObstaclePolicy(BasePolicy):
     ) -> torch.Tensor:
         predicted_action_chunks = self.forward(state)
         target_action_chunks = self.discretize_action(action_chunk)
-        ee_loss = self.loss_function(predicted_action_chunks["ee"].flatten(end_dim=-2), target_action_chunks["ee"].flatten())
-        gripper_loss = self.loss_function(predicted_action_chunks["gripper"].flatten(end_dim=-2), target_action_chunks["gripper"].flatten())
+        
+        ee_loss = self.loss_function(predicted_action_chunks["ee"].flatten(end_dim=-2), 
+                                     target_action_chunks["ee"].flatten(), 
+                                     weight=self.ee_weights)
+        gripper_loss = self.loss_function(predicted_action_chunks["gripper"].flatten(end_dim=-2), 
+                                          target_action_chunks["gripper"].flatten())
         return (ee_loss * self.ee_loss_weight) + (gripper_loss* (1.0-self.ee_loss_weight))
 
     def sample_actions(
