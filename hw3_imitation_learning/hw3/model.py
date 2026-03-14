@@ -49,7 +49,7 @@ class ObstaclePolicy(BasePolicy):
     ) -> None:
         super().__init__(*args, **kwargs)
         # model size parameters
-        self.gripper_action_dim = 25
+        self.gripper_action_dim = 15
         self.ee_action_dim = 7 #[0, +x, +y, +z, -x, -y, -z]
         self.depth = depth 
         self.d_model = d_model
@@ -63,7 +63,7 @@ class ObstaclePolicy(BasePolicy):
         self.ee_linear_layer = nn.Linear(d_model, d_model)
         self.gripper_linear_layer = nn.Linear(d_model, d_model)
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
-        self.dropout = torch.nn.Dropout(p=0.125)
+        self.dropout = torch.nn.Dropout(p=0.1)
 
         zero_movement_weight = 0.035
         self.log_var_ee = nn.Parameter(torch.zeros(1))
