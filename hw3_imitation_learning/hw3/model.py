@@ -63,9 +63,8 @@ class ObstaclePolicy(BasePolicy):
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
         self.dropout = torch.nn.Dropout(p=0.15)
 
-        zero_movement_weight = 0.015
-        self.log_var_ee = nn.Parameter(torch.zeros(1))
-        self.log_var_gripper = nn.Parameter(torch.zeros(1))
+        zero_movement_weight = 0.02
+        self.ee_loss_weight = 0.35
         ee_ce_weights = torch.zeros([7])
         ee_ce_weights[:] = (1.-zero_movement_weight)/6.
         ee_ce_weights[0] = zero_movement_weight
@@ -81,7 +80,7 @@ class ObstaclePolicy(BasePolicy):
                                           [-1.,0.,0.],  # -x
                                           [0.,-1.,0.],  # -y
                                           [0.,0.,-1.]]) # -z
-        self.ee_translation_per_step = 0.0033
+        self.ee_translation_per_step = 0.0075
         
         self.register_buffer('gripper_centers', (gripper_bounds[:-1] + gripper_bounds[1:]) / 2)
         self.register_buffer('gripper_bounds', gripper_bounds)
@@ -115,22 +114,21 @@ class ObstaclePolicy(BasePolicy):
                                      target_action_chunks["ee"].flatten())
         gripper_loss = self.gripper_loss_function(predicted_action_chunks["gripper"].flatten(end_dim=-2), 
                                           target_action_chunks["gripper"].flatten())
-        return(ee_loss * torch.exp(-self.log_var_ee) + self.log_var_ee +
-                gripper_loss * torch.exp(-self.log_var_gripper) + self.log_var_gripper)
-                #learned gripper - ee loss ratio
+        return self.ee_loss_weight * ee_loss + (1 - self.ee_loss_weight) * gripper_loss
 
     def sample_actions(
         self,
         state: torch.Tensor,
     ) -> torch.Tensor:
         self.eval()
-        temp = 0.1
+        ee_temp = 0.2
+        gripper_temp = 1.5
         with torch.no_grad():
             action_logits = self.forward(state)
             #action_logits["ee"][:, :, 0] /= 5
             #print(action_logits["ee"])
-            ee_probabilities = self.softmax(action_logits["ee"]/temp).flatten(end_dim=-2)
-            gripper_probabilities = self.softmax(action_logits["gripper"]).flatten(end_dim=-2)
+            ee_probabilities = self.softmax(action_logits["ee"]/ee_temp).flatten(end_dim=-2)
+            gripper_probabilities = self.softmax(action_logits["gripper"]/gripper_temp).flatten(end_dim=-2)
             gripper_idx = torch.multinomial(gripper_probabilities, num_samples=1).reshape([state.size(0), self.chunk_size, 1])
             ee_idx = torch.multinomial(ee_probabilities, num_samples=1).reshape([state.size(0), self.chunk_size])
             ee_actions = self.ee_action_map[ee_idx]*self.ee_translation_per_step
