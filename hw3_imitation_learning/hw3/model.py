@@ -132,7 +132,7 @@ class ObstaclePolicy(BasePolicy):
         state: torch.Tensor,
     ) -> torch.Tensor:
         self.eval()
-        ee_temp = 0.7
+        ee_temp = 1.0
         gripper_temp = 1.0
         with torch.no_grad():
             action_logits = self.forward(state)
@@ -153,7 +153,7 @@ class ObstaclePolicy(BasePolicy):
         Returns seperate discretized actions for ee and gripper {[B, action_chunk], [B,action_chunk]}
         ([0, +x,+y, +z, -x, -y, -z], [-0.2, 0.0, 0.1, 0.2 ..., 1.8])
         '''
-        ee_movement_thresh = 0.005
+        ee_movement_thresh = 0.004
 
         positive_mask = torch.zeros_like(action[:, :, :3], dtype=bool)
         negative_mask = torch.zeros_like(action[:, :, :3], dtype=bool)

@@ -29,7 +29,7 @@ from hw3.model import BasePolicy, build_policy
 from torch.utils.data import DataLoader, random_split
 
 EPOCHS = 100
-BATCH_SIZE = 256
+BATCH_SIZE = 512
 LR = 4e-3
 VAL_SPLIT = 0.2
 
@@ -170,10 +170,10 @@ def main() -> None:
     )
 
     train_loader = DataLoader(
-        train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=4
+        train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=0
     )
     val_loader = DataLoader(
-        val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=4
+        val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=0
     )
 
     # ── model ─────────────────────────────────────────────────────────
