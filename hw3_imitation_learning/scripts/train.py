@@ -29,9 +29,9 @@ from hw3.model import BasePolicy, build_policy
 from torch.utils.data import DataLoader, random_split
 
 EPOCHS = 1
-BATCH_SIZE = 512
-LR = 1e-3
-VAL_SPLIT = 0.15
+BATCH_SIZE = 256
+LR = 5e-3
+VAL_SPLIT = 0.1
 
 
 def train_one_epoch(
@@ -190,7 +190,7 @@ def main() -> None:
     print(f"Model parameters: {n_params:,}")
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 50, gamma=0.5)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10, gamma=0.9)
 
     # ── training loop ─────────────────────────────────────────────────
     best_val = float("inf")
