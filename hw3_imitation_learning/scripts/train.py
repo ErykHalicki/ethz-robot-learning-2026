@@ -231,12 +231,12 @@ def main() -> None:
                 "normalizer": {
                     "state_mean": normalizer.state_mean,
                     "state_std": normalizer.state_std,
-                    "action_mean": normalizer.action_mean,
-                    "action_std": normalizer.action_std,
+                    #"action_mean": normalizer.action_mean,
+                    #"action_std": normalizer.action_std,
                     #"state_mean": 0,
                     #"state_std": 1,
-                    #"action_mean": 0,
-                    #"action_std": 1,
+                    "action_mean": 0,
+                    "action_std": 1,
                     # changed this because i want to
                     # discretize my action space, and it is getting in the way
                 },
