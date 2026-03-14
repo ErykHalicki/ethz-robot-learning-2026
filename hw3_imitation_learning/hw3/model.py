@@ -63,9 +63,9 @@ class ObstaclePolicy(BasePolicy):
         self.ee_linear_layer = nn.Linear(d_model, d_model)
         self.gripper_linear_layer = nn.Linear(d_model, d_model)
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
-        self.dropout = torch.nn.Dropout(p=0.175)
+        self.dropout = torch.nn.Dropout(p=0.1)
 
-        zero_movement_weight = 0.015
+        zero_movement_weight = 0.02
         self.log_var_ee = nn.Parameter(torch.zeros(1))
         self.log_var_gripper = nn.Parameter(torch.zeros(1))
         ee_ce_weights = torch.zeros([7])
@@ -83,7 +83,7 @@ class ObstaclePolicy(BasePolicy):
                                           [-1.,0.,0.],  # -x
                                           [0.,-1.,0.],  # -y
                                           [0.,0.,-1.]]) # -z
-        self.ee_translation_per_step = 0.006
+        self.ee_translation_per_step = 0.0045
         
         self.register_buffer('gripper_centers', (gripper_bounds[:-1] + gripper_bounds[1:]) / 2)
         self.register_buffer('gripper_bounds', gripper_bounds)
@@ -147,7 +147,7 @@ class ObstaclePolicy(BasePolicy):
         Returns seperate discretized actions for ee and gripper {[B, action_chunk], [B,action_chunk]}
         ([0, +x,+y, +z, -x, -y, -z], [-0.2, 0.0, 0.1, 0.2 ..., 1.8])
         '''
-        ee_movement_thresh = 0.005
+        ee_movement_thresh = 0.0025
 
         positive_mask = torch.zeros_like(action[:, :, :3], dtype=bool)
         negative_mask = torch.zeros_like(action[:, :, :3], dtype=bool)

@@ -30,7 +30,7 @@ from torch.utils.data import DataLoader, random_split
 
 EPOCHS = 1
 BATCH_SIZE = 512
-LR = 2e-3
+LR = 5e-3
 VAL_SPLIT = 0.2
 
 
@@ -190,7 +190,7 @@ def main() -> None:
     print(f"Model parameters: {n_params:,}")
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 20, gamma=0.75)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 40, gamma=0.75)
 
     # ── training loop ─────────────────────────────────────────────────
     best_val = float("inf")
