@@ -61,8 +61,8 @@ class ObstaclePolicy(BasePolicy):
         self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
 
-        self.ee_loss_weight = 0.8
-        zero_movement_weight = 0.1
+        self.ee_loss_weight = 0.6
+        zero_movement_weight = 0.05
         ee_ce_weights = torch.zeros([7])
         ee_ce_weights[:] = (1.-zero_movement_weight)/6.
         ee_ce_weights[0] = zero_movement_weight
@@ -119,7 +119,8 @@ class ObstaclePolicy(BasePolicy):
     ) -> torch.Tensor:
         with torch.no_grad():
             action_logits = self.forward(state)
-            action_logits["ee"][:, 0, :] = 0.0
+            action_logits["ee"][:, :, 0] /= 2
+            print(action_logits["ee"])
             ee_probabilities = self.softmax(action_logits["ee"]).flatten(end_dim=-2)
             gripper_probabilities = self.softmax(action_logits["gripper"]).flatten(end_dim=-2)
             gripper_idx = torch.multinomial(gripper_probabilities, num_samples=1).reshape([state.size(0), self.chunk_size, 1])
