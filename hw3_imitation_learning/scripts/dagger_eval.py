@@ -81,7 +81,7 @@ def run_dagger_episode(
     success = False
     human_control = False
     n_takeover_steps = 0
-    recording_this_episode = True  # track if we recorded anything
+    recording_this_episode = False  # track if we recorded anything
     # Grace period: after success is detected during human control, keep
     # running for GRACE_SECS more so at least one full chunk is recorded.
     GRACE_SECS = 1.7
