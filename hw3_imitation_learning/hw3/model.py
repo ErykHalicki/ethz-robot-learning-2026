@@ -49,7 +49,7 @@ class ObstaclePolicy(BasePolicy):
     ) -> None:
         super().__init__(*args, **kwargs)
         # model size parameters
-        self.gripper_action_dim = 15
+        self.gripper_action_dim = 16  # 15 boundaries → 16 bins
         self.ee_action_dim = 7 #[0, +x, +y, +z, -x, -y, -z]
         self.depth = depth 
         self.d_model = d_model
@@ -85,7 +85,9 @@ class ObstaclePolicy(BasePolicy):
                                           [0.,0.,-1.]]) # -z
         self.ee_translation_per_step = 0.006
         
-        self.register_buffer('gripper_centers', (gripper_bounds[:-1] + gripper_bounds[1:]) / 2)
+        bin_midpoints = (gripper_bounds[:-1] + gripper_bounds[1:]) / 2
+        gripper_centers = torch.cat([gripper_bounds[:1], bin_midpoints, gripper_bounds[-1:]])
+        self.register_buffer('gripper_centers', gripper_centers)
         self.register_buffer('gripper_bounds', gripper_bounds)
         self.register_buffer('ee_action_map', ee_action_map)
 
