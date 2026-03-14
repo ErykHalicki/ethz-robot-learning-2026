@@ -60,6 +60,8 @@ class ObstaclePolicy(BasePolicy):
         self.layer_norms = nn.ModuleList([nn.LayerNorm([d_model]) for _ in range(self.depth)])
         self.hidden_layers = nn.ModuleList([nn.Linear(d_model, d_model) for _ in range(self.depth)])
         self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
+        self.ee_linear_layer = nn.Linear(d_model, d_model)
+        self.gripper_linear_layer = nn.Linear(d_model, d_model)
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
         self.dropout = torch.nn.Dropout(p=0.175)
 
@@ -100,8 +102,8 @@ class ObstaclePolicy(BasePolicy):
         x = self.dropout(self.activation(self.input_layer(x)))
         for i in range(self.depth):
             x = self.dropout(self.activation(self.hidden_layers[i](self.layer_norms[i](x))))
-        gripper_out = self.gripper_output_layer(x)
-        ee_out = self.ee_output_layer(x)
+        gripper_out = self.gripper_output_layer(self.activation(self.gripper_linear_layer(x)))
+        ee_out = self.ee_output_layer(self.activation(self.ee_linear_layer(x)))
         return {"ee": torch.reshape(ee_out, [x.size(0), self.chunk_size, self.ee_action_dim]),
                 "gripper": torch.reshape(gripper_out, [x.size(0), self.chunk_size, self.gripper_action_dim])}
 
@@ -115,8 +117,6 @@ class ObstaclePolicy(BasePolicy):
                                      target_action_chunks["ee"].flatten())
         gripper_loss = self.gripper_loss_function(predicted_action_chunks["gripper"].flatten(end_dim=-2), 
                                           target_action_chunks["gripper"].flatten())
-        self.log_var_ee.data.clamp_(0, 10)
-        self.log_var_gripper.data.clamp_(0, 10)
         return (ee_loss * torch.exp(-self.log_var_ee) + self.log_var_ee +
                 gripper_loss * torch.exp(-self.log_var_gripper) + self.log_var_gripper)
                 #learned gripper - ee loss ratio
@@ -126,8 +126,8 @@ class ObstaclePolicy(BasePolicy):
         state: torch.Tensor,
     ) -> torch.Tensor:
         self.eval()
-        ee_temp = 0.5
-        gripper_temp = 0.5
+        ee_temp = 1.0
+        gripper_temp = 1.0
         with torch.no_grad():
             action_logits = self.forward(state)
             #action_logits["ee"][:, :, 0] /= 5
