@@ -28,10 +28,10 @@ from hw3.model import BasePolicy, build_policy
 
 from torch.utils.data import DataLoader, random_split
 
-EPOCHS = 1
+EPOCHS = 100
 BATCH_SIZE = 128
-LR = 5e-4
-VAL_SPLIT = 0.2
+LR = 5e-3
+VAL_SPLIT = 0.1
 
 
 def train_one_epoch(
