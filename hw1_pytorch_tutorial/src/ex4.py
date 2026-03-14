@@ -356,7 +356,7 @@ def count_params(model):
 # In[ ]:
 
 
-cfg = TrainConfig(seed=0, batch_size=256, epochs=8, lr=3e-4, weight_decay=0.01, device="cuda")
+cfg = TrainConfig(seed=0, batch_size=256, epochs=1, lr=3e-4, weight_decay=0.01, device="cuda")
 
 tfm = transforms.Compose([transforms.ToTensor()])
 

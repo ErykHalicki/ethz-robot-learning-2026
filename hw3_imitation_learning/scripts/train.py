@@ -29,9 +29,9 @@ from hw3.model import BasePolicy, build_policy
 from torch.utils.data import DataLoader, random_split
 
 EPOCHS = 1
-BATCH_SIZE = 256
-LR = 3e-4
-VAL_SPLIT = 0.2
+BATCH_SIZE = 64
+LR = 1e-3
+VAL_SPLIT = 0.15
 
 
 def train_one_epoch(
@@ -269,7 +269,7 @@ def main() -> None:
 
         print(
             f"Epoch {epoch:3d}/{args.epochs} | "
-            f"train {train_loss:.6f} | val {val_loss:.6f}{tag}"
+            f"train {train_loss:.6f} | val {val_loss:.6f}{tag} | lr: {optimizer.state_dict()['param_groups'][0]['lr']}"
         )
 
     print(f"\nBest val loss: {best_val:.6f}")
