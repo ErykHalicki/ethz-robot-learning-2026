@@ -29,9 +29,9 @@ from hw3.model import BasePolicy, build_policy
 from torch.utils.data import DataLoader, random_split
 
 EPOCHS = 1
-BATCH_SIZE = 256
-LR = 5e-3
-VAL_SPLIT = 0.1
+BATCH_SIZE = 512
+LR = 2e-3
+VAL_SPLIT = 0.15
 
 
 def train_one_epoch(
@@ -126,7 +126,7 @@ def main() -> None:
         "Supports column slicing with [:N], [M:], [M:N]. "
         "If omitted, uses the action_key attribute from the zarr metadata.",
     )
-    parser.add_argument("--seed", type=int, default=514, help="Random seed.")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed.")
     parser.add_argument("--epochs", type=int, default=EPOCHS, help=f"Number of training epochs (default: {EPOCHS}).")
     args = parser.parse_args()
 
@@ -190,7 +190,7 @@ def main() -> None:
     print(f"Model parameters: {n_params:,}")
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10, gamma=0.9)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 100, gamma=0.9)
 
     # ── training loop ─────────────────────────────────────────────────
     best_val = float("inf")
