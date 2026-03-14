@@ -56,7 +56,8 @@ class ObstaclePolicy(BasePolicy):
 
         self.activation = nn.GELU()
         self.input_layer = nn.Linear(self.state_dim,d_model)
-        self.layer_norms = nn.ModuleList([nn.LayerNorm([d_model]) for _ in range(self.depth)])
+        self.layer_norms_full = nn.ModuleList([nn.LayerNorm([d_model]) for _ in range(self.depth)])
+        self.layer_norms_contracted = nn.ModuleList([nn.LayerNorm([int(d_model/4)]) for _ in range(self.depth)])
         self.hidden_layers_contract = nn.ModuleList([nn.Linear(d_model, int(d_model/4)) for _ in range(self.depth)])
         self.hidden_layers_expand = nn.ModuleList([nn.Linear(int(d_model/4), d_model) for _ in range(self.depth)])
         self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
@@ -98,8 +99,8 @@ class ObstaclePolicy(BasePolicy):
         x = self.dropout(self.activation(self.input_layer(x)))
         for i in range(self.depth):
             original_x = x
-            x = self.dropout(self.activation(self.hidden_layers_contract[i](self.layer_norms[i](x))))
-            x = self.dropout(self.activation(self.hidden_layers_expand[i](self.layer_norms[i](x))))
+            x = self.dropout(self.activation(self.hidden_layers_contract[i](self.layer_norms_full[i](x))))
+            x = self.dropout(self.activation(self.hidden_layers_expand[i](self.layer_norms_contracted[i](x))))
             x = x + original_x #residual connection
         gripper_out = self.gripper_output_layer(x)
         ee_out = self.ee_output_layer(x)
