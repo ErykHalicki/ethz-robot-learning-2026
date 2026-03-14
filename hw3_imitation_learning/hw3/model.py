@@ -60,6 +60,7 @@ class ObstaclePolicy(BasePolicy):
         self.hidden_layers = nn.ModuleList([nn.Linear(d_model, d_model) for _ in range(self.depth)])
         self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
+        self.dropout = torch.nn.modules.dropout.Dropout(p=0.3)
 
         self.ee_loss_weight = 0.3
         zero_movement_weight = 0.03
@@ -93,9 +94,9 @@ class ObstaclePolicy(BasePolicy):
         ee: [B, chunk_dim, ee_action_dim]
         gripper: [B, chunk_dim, gripper_action_dim]
         """
-        x = self.activation(self.input_layer(x))
+        x = self.dropout(self.activation(self.input_layer(x)))
         for i in range(self.depth):
-            x = self.activation(self.hidden_layers[i](self.layer_norms[i](x))) + x
+            x = self.dropout(self.activation(self.hidden_layers[i](self.layer_norms[i](x)))) + x
         gripper_out = self.gripper_output_layer(x)
         ee_out = self.ee_output_layer(x)
         return {"ee": torch.reshape(ee_out, [x.size(0), self.chunk_size, self.ee_action_dim]),
@@ -117,6 +118,7 @@ class ObstaclePolicy(BasePolicy):
         self,
         state: torch.Tensor,
     ) -> torch.Tensor:
+        self.eval()
         with torch.no_grad():
             action_logits = self.forward(state)
             #action_logits["ee"][:, :, 0] /= 2
