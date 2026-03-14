@@ -29,7 +29,7 @@ from hw3.model import BasePolicy, build_policy
 from torch.utils.data import DataLoader, random_split
 
 EPOCHS = 100
-BATCH_SIZE = 1024
+BATCH_SIZE = 256
 LR = 2e-3
 VAL_SPLIT = 0.2
 
@@ -189,8 +189,8 @@ def main() -> None:
     n_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Model parameters: {n_params:,}")
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=LR)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 40, gamma=0.75)
+    optimizer = torch.optim.SGD(model.parameters(), lr=LR)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 20, gamma=0.75)
 
     # ── training loop ─────────────────────────────────────────────────
     best_val = float("inf")

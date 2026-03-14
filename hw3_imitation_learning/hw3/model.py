@@ -117,7 +117,7 @@ class ObstaclePolicy(BasePolicy):
                                      target_action_chunks["ee"].flatten())
         gripper_loss = self.gripper_loss_function(predicted_action_chunks["gripper"].flatten(end_dim=-2), 
                                           target_action_chunks["gripper"].flatten())
-        return ee_loss * 0.3 + gripper_loss * 0.7
+        return ee_loss * 0.35 + gripper_loss * 0.65
         #return (ee_loss * torch.exp(-self.log_var_ee) + self.log_var_ee +
         #gripper_loss * torch.exp(-self.log_var_gripper) + self.log_var_gripper)
                #learned gripper - ee loss ratio
@@ -127,7 +127,7 @@ class ObstaclePolicy(BasePolicy):
         state: torch.Tensor,
     ) -> torch.Tensor:
         self.eval()
-        ee_temp = 1.0
+        ee_temp = 0.7
         gripper_temp = 1.0
         with torch.no_grad():
             action_logits = self.forward(state)
@@ -148,7 +148,7 @@ class ObstaclePolicy(BasePolicy):
         Returns seperate discretized actions for ee and gripper {[B, action_chunk], [B,action_chunk]}
         ([0, +x,+y, +z, -x, -y, -z], [-0.2, 0.0, 0.1, 0.2 ..., 1.8])
         '''
-        ee_movement_thresh = 0.0065
+        ee_movement_thresh = 0.005
 
         positive_mask = torch.zeros_like(action[:, :, :3], dtype=bool)
         negative_mask = torch.zeros_like(action[:, :, :3], dtype=bool)
