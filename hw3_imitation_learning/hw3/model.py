@@ -99,7 +99,7 @@ class ObstaclePolicy(BasePolicy):
         x = self.dropout(self.activation(self.input_layer(x)))
         for i in range(self.depth):
             original_x = x
-            x = self.dropout(self.activation(self.hidden_layers_contract[i](self.layer_norms[i+1](x))))
+            x = self.activation(self.hidden_layers_contract[i](self.layer_norms[i+1](x)))
             x = self.dropout(self.activation(self.hidden_layers_expand[i](x)))
             x = x + original_x #residual connection
         gripper_out = self.gripper_output_layer(x)
