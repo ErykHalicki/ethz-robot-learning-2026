@@ -66,7 +66,8 @@ class ObstaclePolicy(BasePolicy):
         ee_ce_weights = torch.zeros([7])
         ee_ce_weights[:] = (1.-zero_movement_weight)/6.
         ee_ce_weights[0] = zero_movement_weight
-        self.loss_function = torch.nn.CrossEntropyLoss(weight=ee_ce_weights)
+        self.ee_loss_function = torch.nn.CrossEntropyLoss(weight=ee_ce_weights)
+        self.gripper_loss_function = torch.nn.CrossEntropyLoss()
         self.softmax = torch.nn.Softmax(dim=-1)
 
         gripper_bounds = torch.linspace(-0.2, 1.75, self.gripper_action_dim)
@@ -106,9 +107,9 @@ class ObstaclePolicy(BasePolicy):
         predicted_action_chunks = self.forward(state)
         target_action_chunks = self.discretize_action(action_chunk)
         
-        ee_loss = self.loss_function(predicted_action_chunks["ee"].flatten(end_dim=-2), 
+        ee_loss = self.ee_loss_function(predicted_action_chunks["ee"].flatten(end_dim=-2), 
                                      target_action_chunks["ee"].flatten())
-        gripper_loss = self.loss_function(predicted_action_chunks["gripper"].flatten(end_dim=-2), 
+        gripper_loss = self.gripper_loss_function(predicted_action_chunks["gripper"].flatten(end_dim=-2), 
                                           target_action_chunks["gripper"].flatten())
         return (ee_loss * self.ee_loss_weight) + (gripper_loss* (1.0-self.ee_loss_weight))
 
