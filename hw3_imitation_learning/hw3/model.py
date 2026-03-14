@@ -58,11 +58,11 @@ class ObstaclePolicy(BasePolicy):
         self.input_layer = nn.Linear(self.state_dim,d_model)
         self.input_norm = nn.LayerNorm([self.state_dim])
         self.layer_norms = nn.ModuleList([nn.LayerNorm([d_model]) for _ in range(self.depth)])
-        self.hidden_layers_expand = nn.ModuleList([nn.Linear(d_model, int(d_model*4)) for _ in range(self.depth)])
-        self.hidden_layers_contract = nn.ModuleList([nn.Linear(int(d_model*4), d_model) for _ in range(self.depth)])
+        self.hidden_layers_expand = nn.ModuleList([nn.Linear(d_model, int(d_model*2)) for _ in range(self.depth)])
+        self.hidden_layers_contract = nn.ModuleList([nn.Linear(int(d_model*2), d_model) for _ in range(self.depth)])
         self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
-        self.dropout = torch.nn.Dropout(p=0.3)
+        self.dropout = torch.nn.Dropout(p=0.2)
 
         self.ee_loss_weight = 0.35
         zero_movement_weight = 0.015
@@ -81,7 +81,7 @@ class ObstaclePolicy(BasePolicy):
                                           [-1.,0.,0.],  # -x
                                           [0.,-1.,0.],  # -y
                                           [0.,0.,-1.]]) # -z
-        self.ee_translation_per_step = 0.0075
+        self.ee_translation_per_step = 0.005
         
         self.register_buffer('gripper_centers', (gripper_bounds[:-1] + gripper_bounds[1:]) / 2)
         self.register_buffer('gripper_bounds', gripper_bounds)
