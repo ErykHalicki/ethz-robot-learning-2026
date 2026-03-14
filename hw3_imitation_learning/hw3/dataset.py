@@ -202,8 +202,8 @@ class SO100ChunkDataset(Dataset):
         state = self.states[t]
         action_chunk = self.actions[t : t + self.chunk_size]
 
-        #if self.normalizer is not None:
-            #state = self.normalizer.normalize_state(state)
+        if self.normalizer is not None:
+            state = self.normalizer.normalize_state(state)
             #action_chunk = self.normalizer.normalize_action(action_chunk)
 
         state_t = torch.from_numpy(state).float()

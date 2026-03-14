@@ -119,8 +119,8 @@ class ObstaclePolicy(BasePolicy):
     ) -> torch.Tensor:
         with torch.no_grad():
             action_logits = self.forward(state)
-            action_logits["ee"][:, :, 0] /= 2
-            print(action_logits["ee"])
+            #action_logits["ee"][:, :, 0] /= 2
+            #print(action_logits["ee"])
             ee_probabilities = self.softmax(action_logits["ee"]).flatten(end_dim=-2)
             gripper_probabilities = self.softmax(action_logits["gripper"]).flatten(end_dim=-2)
             gripper_idx = torch.multinomial(gripper_probabilities, num_samples=1).reshape([state.size(0), self.chunk_size, 1])
