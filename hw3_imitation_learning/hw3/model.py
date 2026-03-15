@@ -216,7 +216,13 @@ class MSEPolicy(BasePolicy):
 # TODO: Students implement MultiTaskPolicy here.
 class MultiTaskPolicy(ObstaclePolicy):
     """Goal-conditioned policy for the multicube scene."""
-    pass
+    def __init__(
+        self,
+        *args,
+        **kwargs,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.dropout = nn.Dropout(p=0.25)
 
 
 PolicyType: TypeAlias = Literal["obstacle", "multitask"]
