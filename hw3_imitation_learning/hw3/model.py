@@ -222,7 +222,8 @@ class MultiTaskPolicy(ObstaclePolicy):
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self.dropout = nn.Dropout(p=0.25)
+        self.dropout = nn.Dropout(p=0.15)
+        
 
 
 PolicyType: TypeAlias = Literal["obstacle", "multitask"]

@@ -12,6 +12,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+from itertools import permutations as _permutations
 from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -28,6 +29,33 @@ from hw3.model import BasePolicy, build_policy
 
 from torch.utils.data import DataLoader, random_split
 
+_CUBE_PERMS = [list(p) for p in _permutations([0, 1, 2])]
+
+
+def augment_multicube_permutations(
+    states: torch.Tensor,
+    action_chunks: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Return all 6 cube-slot permutations of each sample.
+
+    State layout (last 12 dims before the goal one-hot):
+        [..., -12:-9]: red cube xyz
+        [...,  -9:-6]: green cube xyz
+        [...,  -6:-3]: blue cube xyz
+        [...,   -3:  ]: goal one-hot (3,)
+
+    Output shapes: (6*B, D) and (6*B, H, A).
+    """
+    aug_states = []
+    for perm in _CUBE_PERMS:
+        s = states.clone()
+        cube_pos = s[..., -12:-3].reshape(*s.shape[:-1], 3, 3)
+        s[..., -12:-3] = cube_pos[..., perm, :].reshape(*s.shape[:-1], 9)
+        s[..., -3:] = states[..., -3:][..., perm]
+        aug_states.append(s)
+    return torch.cat(aug_states, dim=0), torch.cat([action_chunks] * 6, dim=0)
+
+
 EPOCHS = 100
 BATCH_SIZE = 512
 LR = 4e-3
@@ -39,6 +67,7 @@ def train_one_epoch(
     loader: DataLoader,
     optimizer: torch.optim.Optimizer,
     device: torch.device,
+    multicube=False,
 ) -> float:
     model.train()
     total_loss = 0.0
@@ -46,8 +75,25 @@ def train_one_epoch(
     
     for batch in loader:
         states, action_chunks = batch
+        if multicube:
+            # generate fake data by swapping around the goal cube state vectors based on goal
+            # NOTE: REQUIRES SPECIFIC STATE VECTOR ORDER
+            # eg. goal state: [1, 0, 0] (states[:, :, -3:])
+            # cube positions: red [-12:-9], green [-9:-6], blue [-6:-3]
+            #
+            # For every sample we can create 6 artificial samples:
+            #   Base sample (no change)
+            #   swap non-goal positions, keep goal the same ([1,2,3] -> [3,2,1] for goal [0, 1, 0])
+            #   swap goal with non-goal (positions and goal) ([1,2,3] -> [2,1,3] for goal [0, 1, 0] -> [1, 0, 0])
+            #       swap goal with non-goal AND non-goal positions (123 -> 231) for goal [010] -> [100]
+            # So really just permutations
+            states, action_chunks = augment_multicube_permutations(states, action_chunks)
+
         states = states.to(device)
         action_chunks = action_chunks.to(device)
+        
+        
+
         optimizer.zero_grad()
         loss = model.compute_loss(states, action_chunks)
         loss.backward()
@@ -125,6 +171,13 @@ def main() -> None:
         help="Action array key specs to concatenate, e.g. action_ee_xyz action_gripper. "
         "Supports column slicing with [:N], [M:], [M:N]. "
         "If omitted, uses the action_key attribute from the zarr metadata.",
+    )
+
+    parser.add_argument(
+        "--multicube",
+        action="store_true",
+        help="Generate fake data for multicube (REQUIRES SPECIFIC STATE VECTOR ORDER)"
+        '"original_pos_cube_red[:3]"  "original_pos_cube_green[:3]" "original_pos_cube_blue[:3]" state_goal'
     )
     parser.add_argument("--seed", type=int, default=42, help="Random seed.")
     parser.add_argument("--epochs", type=int, default=EPOCHS, help=f"Number of training epochs (default: {EPOCHS}).")
@@ -254,7 +307,7 @@ def main() -> None:
         )
 
     for epoch in range(1, args.epochs + 1):
-        train_loss = train_one_epoch(model, train_loader, optimizer, device)
+        train_loss = train_one_epoch(model, train_loader, optimizer, device, args.multicube)
         val_loss = evaluate(model, val_loader, device)
         scheduler.step()
         

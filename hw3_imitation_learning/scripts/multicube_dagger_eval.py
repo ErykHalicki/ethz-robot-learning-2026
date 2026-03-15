@@ -307,14 +307,14 @@ def main():
     parser.add_argument(
         "--num-episodes",
         type=int,
-        default=10,
+        default=20,
         help="Number of evaluation episodes (default: 10).",
     )
     parser.add_argument(
         "--max-steps",
         type=int,
-        default=800,
-        help="Maximum steps per episode (default: 800).",
+        default=2000,
+        help="Maximum steps per episode (default: 2000).",
     )
     parser.add_argument(
         "--seed",

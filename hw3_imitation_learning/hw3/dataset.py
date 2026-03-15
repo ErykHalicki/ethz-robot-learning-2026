@@ -192,8 +192,6 @@ class SO100ChunkDataset(Dataset):
         self.normalizer = normalizer
         self.indices = build_valid_indices(episode_ends, chunk_size)
 
-
-
     def __len__(self) -> int:
         return len(self.indices)
 
