@@ -57,7 +57,7 @@ class ObstaclePolicy(BasePolicy):
 
         self.activation = nn.GELU()
         self.input_layer = nn.Linear(self.state_dim,d_model)
-        self.input_norm = nn.LayerNorm([self.state_dim])
+        #self.input_norm = nn.LayerNorm([self.state_dim])
         self.layer_norms = nn.ModuleList([nn.LayerNorm([d_model]) for _ in range(self.depth)])
         self.hidden_layers = nn.ModuleList([nn.Linear(d_model, d_model) for _ in range(self.depth)])
         self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
@@ -101,8 +101,7 @@ class ObstaclePolicy(BasePolicy):
         ee: [B, chunk_dim, ee_action_dim]
         gripper: [B, chunk_dim, gripper_action_dim]
         """
-        x = self.input_norm(x)
-        x = self.dropout(self.activation(self.input_layer(x)))
+        x = self.activation(self.input_layer(x))
         for i in range(self.depth):
             x = self.dropout(self.activation(self.hidden_layers[i](self.layer_norms[i](x))))
         gripper_out = self.gripper_output_layer(x)
@@ -223,10 +222,11 @@ class MultiTaskPolicy(ObstaclePolicy):
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self.dropout = nn.Dropout(p=0.25)
+        self.dropout = nn.Dropout(p=0.2)
         self.ee_temp = 0.8
         zero_movement_weight = 0.035
         self.ee_ce_weights[0] = zero_movement_weight
+        self.chunk_size = 16
         
 
 
