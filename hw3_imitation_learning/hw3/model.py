@@ -48,7 +48,7 @@ class ObstaclePolicy(BasePolicy):
         *args, 
         **kwargs
     ) -> None:
-        super().__init__(chunk_size, *args, **kwargs)
+        super().__init__(chunk_size=chunk_size, *args, **kwargs)
         # model size parameters
         self.gripper_action_dim = 10
         self.ee_action_dim = 7 #[0, +x, +y, +z, -x, -y, -z]
@@ -223,7 +223,7 @@ class MultiTaskPolicy(ObstaclePolicy):
         *args,
         **kwargs,
     ) -> None:
-        super().__init__(chunk_size, *args, **kwargs)
+        super().__init__(chunk_size=chunk_size, *args, **kwargs)
         self.dropout = nn.Dropout(p=0.2)
         self.ee_temp = 1.0
         zero_movement_weight = 0.035
