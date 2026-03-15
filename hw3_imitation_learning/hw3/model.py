@@ -82,7 +82,7 @@ class ObstaclePolicy(BasePolicy):
                                           [-1.,0.,0.],  # -x
                                           [0.,-1.,0.],  # -y
                                           [0.,0.,-1.]]) # -z
-        self.ee_translation_per_step = 0.007
+        self.ee_translation_per_step = 0.0075
         
         bin_midpoints = (gripper_bounds[:-1] + gripper_bounds[1:]) / 2
         gripper_centers = torch.cat([gripper_bounds[:1], bin_midpoints, gripper_bounds[-1:]])
@@ -131,8 +131,8 @@ class ObstaclePolicy(BasePolicy):
         state: torch.Tensor,
     ) -> torch.Tensor:
         self.eval()
-        ee_temp = 0.9
-        gripper_temp = 0.9
+        ee_temp = 1.0
+        gripper_temp = 1.0
         with torch.no_grad():
             action_logits = self.forward(state)
             #action_logits["ee"][:, :, 0] /= 5
