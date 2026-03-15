@@ -278,7 +278,7 @@ def run_dagger_episode(
 
         cv2.imshow("DAgger Eval", img)
         if human_control:
-            time.sleep(0.05)
+            time.sleep(0.03)
 
     # Episode ended by reaching max_steps
     if recording_this_episode:
