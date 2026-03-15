@@ -354,8 +354,8 @@ def main():
         render_w=640,
         render_h=480,
         use_mocap=use_mocap,
-        #obstacle_mode="adversarial",
-        obstacle_mode="train",
+        obstacle_mode="adversarial",
+        #obstacle_mode="train",
         seed=args.seed,
     )
 

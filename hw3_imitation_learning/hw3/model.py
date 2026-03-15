@@ -42,13 +42,14 @@ class ObstaclePolicy(BasePolicy):
 
     def __init__(
         self, 
-        d_model = 200, 
-        depth = 8,# ~1M params
+        d_model = 350, 
+        depth = 4,
         *args, 
         **kwargs
     ) -> None:
         super().__init__(*args, **kwargs)
         # model size parameters
+        self.chunk_size = 10
         self.gripper_action_dim = 10
         self.ee_action_dim = 7 #[0, +x, +y, +z, -x, -y, -z]
         self.depth = depth 
