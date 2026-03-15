@@ -86,13 +86,10 @@ def train_one_epoch(
             #   swap non-goal positions, keep goal the same ([1,2,3] -> [3,2,1] for goal [0, 1, 0])
             #   swap goal with non-goal (positions and goal) ([1,2,3] -> [2,1,3] for goal [0, 1, 0] -> [1, 0, 0])
             #       swap goal with non-goal AND non-goal positions (123 -> 231) for goal [010] -> [100]
-            # So really just permutations
             states, action_chunks = augment_multicube_permutations(states, action_chunks)
 
         states = states.to(device)
         action_chunks = action_chunks.to(device)
-        
-        
 
         optimizer.zero_grad()
         loss = model.compute_loss(states, action_chunks)

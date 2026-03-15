@@ -83,6 +83,8 @@ class ObstaclePolicy(BasePolicy):
                                           [0.,-1.,0.],  # -y
                                           [0.,0.,-1.]]) # -z
         self.ee_translation_per_step = 0.0075
+        self.ee_temp = 1.0
+        self.gripper_temp = 1.0
         
         bin_midpoints = (gripper_bounds[:-1] + gripper_bounds[1:]) / 2
         gripper_centers = torch.cat([gripper_bounds[:1], bin_midpoints, gripper_bounds[-1:]])
@@ -131,14 +133,13 @@ class ObstaclePolicy(BasePolicy):
         state: torch.Tensor,
     ) -> torch.Tensor:
         self.eval()
-        ee_temp = 1.0
-        gripper_temp = 1.0
+        
         with torch.no_grad():
             action_logits = self.forward(state)
             #action_logits["ee"][:, :, 0] /= 5
             #print(action_logits["ee"])
-            ee_probabilities = self.softmax(action_logits["ee"]/ee_temp).flatten(end_dim=-2)
-            gripper_probabilities = self.softmax(action_logits["gripper"]/gripper_temp).flatten(end_dim=-2)
+            ee_probabilities = self.softmax(action_logits["ee"]/self.ee_temp).flatten(end_dim=-2)
+            gripper_probabilities = self.softmax(action_logits["gripper"]/self.gripper_temp).flatten(end_dim=-2)
             gripper_idx = torch.multinomial(gripper_probabilities, num_samples=1).reshape([state.size(0), self.chunk_size, 1])
             ee_idx = torch.multinomial(ee_probabilities, num_samples=1).reshape([state.size(0), self.chunk_size])
             ee_actions = self.ee_action_map[ee_idx]*self.ee_translation_per_step
@@ -222,7 +223,10 @@ class MultiTaskPolicy(ObstaclePolicy):
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self.dropout = nn.Dropout(p=0.15)
+        self.dropout = nn.Dropout(p=0.25)
+        self.ee_temp = 0.8
+        zero_movement_weight = 0.035
+        self.ee_ce_weights[0] = zero_movement_weight
         
 
 
