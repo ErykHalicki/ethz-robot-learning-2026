@@ -224,12 +224,11 @@ class MultiTaskPolicy(ObstaclePolicy):
         **kwargs,
     ) -> None:
         super().__init__(chunk_size=chunk_size, *args, **kwargs)
-        self.dropout = nn.Dropout(p=0.2)
+        self.dropout = nn.Dropout(p=0.125)
         self.ee_temp = 1.0
-        zero_movement_weight = 0.035
+        zero_movement_weight = 0.025
         self.ee_ce_weights[0] = zero_movement_weight
-        self.ee_loss_weight = 0.5
-        
+        self.ee_loss_weight = 0.65
 
 
 PolicyType: TypeAlias = Literal["obstacle", "multitask"]
