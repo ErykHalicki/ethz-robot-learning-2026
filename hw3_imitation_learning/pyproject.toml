@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["so101_gym*", "hw3*", "student_eval*"]
+include = ["so101_gym*", "hw3*", "student_eval*", "scripts*"]
 
 [tool.setuptools.package-data]
 so101_gym = ["assets/**/*"]
