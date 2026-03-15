@@ -75,6 +75,7 @@ def train_one_epoch(
     
     for batch in loader:
         states, action_chunks = batch
+        print(states.shape)
         if multicube:
             # generate fake data by swapping around the goal cube state vectors based on goal
             # NOTE: REQUIRES SPECIFIC STATE VECTOR ORDER
@@ -87,6 +88,7 @@ def train_one_epoch(
             #   swap goal with non-goal (positions and goal) ([1,2,3] -> [2,1,3] for goal [0, 1, 0] -> [1, 0, 0])
             #       swap goal with non-goal AND non-goal positions (123 -> 231) for goal [010] -> [100]
             states, action_chunks = augment_multicube_permutations(states, action_chunks)
+            print(states.shape)
 
         states = states.to(device)
         action_chunks = action_chunks.to(device)
