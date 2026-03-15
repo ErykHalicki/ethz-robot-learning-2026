@@ -216,11 +216,7 @@ class MSEPolicy(BasePolicy):
 # TODO: Students implement MultiTaskPolicy here.
 class MultiTaskPolicy(ObstaclePolicy):
     """Goal-conditioned policy for the multicube scene."""
-
-    def __init__(
-        self,
-    ) -> None:
-        super().__init__()
+    pass
 
 
 PolicyType: TypeAlias = Literal["obstacle", "multitask"]
@@ -246,6 +242,8 @@ def build_policy(
         return MultiTaskPolicy(
             action_dim=action_dim,
             state_dim=state_dim,
-            # TODO: Build with your chosen specifications
+            chunk_size=chunk_size,
+            d_model=d_model,
+            depth=depth
         )
     raise ValueError(f"Unknown policy type: {policy_type}")
