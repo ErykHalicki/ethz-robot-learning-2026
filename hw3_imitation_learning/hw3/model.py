@@ -214,29 +214,13 @@ class MSEPolicy(BasePolicy):
 
 
 # TODO: Students implement MultiTaskPolicy here.
-class MultiTaskPolicy(BasePolicy):
+class MultiTaskPolicy(ObstaclePolicy):
     """Goal-conditioned policy for the multicube scene."""
 
     def __init__(
         self,
     ) -> None:
         super().__init__()
-
-    def compute_loss(
-        self,
-    ) -> torch.Tensor:
-        raise NotImplementedError
-
-    def sample_actions(
-        self,
-    ) -> torch.Tensor:
-        raise NotImplementedError
-
-    def forward(
-        self,
-    ) -> torch.Tensor:
-        """Return predicted action chunk of shape (B, chunk_size, action_dim)."""
-        raise NotImplementedError
 
 
 PolicyType: TypeAlias = Literal["obstacle", "multitask"]
