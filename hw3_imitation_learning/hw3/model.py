@@ -49,7 +49,7 @@ class ObstaclePolicy(BasePolicy):
     ) -> None:
         super().__init__(*args, **kwargs)
         # model size parameters
-        self.gripper_action_dim = 16  # 15 boundaries → 16 bins
+        self.gripper_action_dim = 10
         self.ee_action_dim = 7 #[0, +x, +y, +z, -x, -y, -z]
         self.depth = depth 
         self.d_model = d_model
@@ -61,9 +61,9 @@ class ObstaclePolicy(BasePolicy):
         self.hidden_layers = nn.ModuleList([nn.Linear(d_model, d_model) for _ in range(self.depth)])
         self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
         self.gripper_output_layer = nn.Linear(d_model, self.gripper_action_dim*self.chunk_size)
-        self.dropout = torch.nn.Dropout(p=0.1)
+        self.dropout = torch.nn.Dropout(p=0.125)
 
-        zero_movement_weight = 0.035
+        zero_movement_weight = 0.075
         self.log_var_ee = nn.Parameter(torch.zeros(1))
         self.log_var_gripper = nn.Parameter(torch.zeros(1))
         ee_ce_weights = torch.zeros([7])
@@ -81,7 +81,7 @@ class ObstaclePolicy(BasePolicy):
                                           [-1.,0.,0.],  # -x
                                           [0.,-1.,0.],  # -y
                                           [0.,0.,-1.]]) # -z
-        self.ee_translation_per_step = 0.008
+        self.ee_translation_per_step = 0.007
         
         bin_midpoints = (gripper_bounds[:-1] + gripper_bounds[1:]) / 2
         gripper_centers = torch.cat([gripper_bounds[:1], bin_midpoints, gripper_bounds[-1:]])
@@ -120,7 +120,7 @@ class ObstaclePolicy(BasePolicy):
         )
         gripper_loss = self.gripper_loss_function(predicted_action_chunks["gripper"].flatten(end_dim=-2), 
                                           target_action_chunks["gripper"].flatten())
-        return ee_loss * 0.35 + gripper_loss * 0.65
+        return ee_loss * 0.25 + gripper_loss * 0.75
         #return (ee_loss * torch.exp(-self.log_var_ee) + self.log_var_ee +
         #gripper_loss * torch.exp(-self.log_var_gripper) + self.log_var_gripper)
                #learned gripper - ee loss ratio
@@ -130,8 +130,8 @@ class ObstaclePolicy(BasePolicy):
         state: torch.Tensor,
     ) -> torch.Tensor:
         self.eval()
-        ee_temp = 1.0
-        gripper_temp = 1.2
+        ee_temp = 0.9
+        gripper_temp = 0.9
         with torch.no_grad():
             action_logits = self.forward(state)
             #action_logits["ee"][:, :, 0] /= 5
