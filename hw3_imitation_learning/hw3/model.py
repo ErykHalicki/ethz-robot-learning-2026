@@ -104,7 +104,7 @@ class ObstaclePolicy(BasePolicy):
         """
         x = self.activation(self.input_layer(x))
         for i in range(self.depth):
-            x = self.dropout(self.activation(self.hidden_layers[i](self.layer_norms[i](x))))
+            x = self.dropout(self.activation(self.hidden_layers[i](self.layer_norms[i](x)))) + x
         gripper_out = self.gripper_output_layer(x)
         ee_out = self.ee_output_layer(x)
         return {"ee": torch.reshape(ee_out, [x.size(0), self.chunk_size, self.ee_action_dim]),
@@ -235,7 +235,7 @@ class MultiTaskPolicy(ObstaclePolicy):
         self.temporal_ensemble_len = 10
         self.last_state = None
         self.state_diff_thresh = 0.5
-        self.m = 0.05
+        self.m = 0.03
         
     def sample_actions(self, state):
         curr_state = state.squeeze(0)
