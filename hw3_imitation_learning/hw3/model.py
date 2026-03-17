@@ -225,12 +225,38 @@ class MultiTaskPolicy(ObstaclePolicy):
     ) -> None:
         super().__init__(chunk_size=chunk_size, *args, **kwargs)
         self.dropout = nn.Dropout(p=0.15)
-        self.ee_temp = 1.2
-        self.gripper_temp = 1.2
+        self.ee_temp = 0.9
+        self.gripper_temp = 0.9
         zero_movement_weight = 0.015
         self.ee_ce_weights[0] = zero_movement_weight
         self.ee_loss_weight = 0.4
-        self.ee_translation_per_step = 0.005
+        self.ee_translation_per_step = 0.0085
+        self.chunk_history = []
+        self.temporal_ensemble_len = 10
+        self.last_state = None
+        self.state_diff_thresh = 0.05
+        self.m = 0.3
+        
+    def sample_actions(self, state):
+        chunk = super().sample_actions(state).squeeze()
+        curr_state = state.squeeze(0)
+        if self.last_state is not None and torch.mean(self.last_state - curr_state).item() > self.state_diff_thresh: 
+            # check if the state vector has changed a lot
+            self.chunk_history = []
+            print(torch.mean(self.last_state - curr_state).item())
+
+        self.last_state = curr_state
+        self.chunk_history.append(chunk)
+        if len(self.chunk_history) >= self.temporal_ensemble_len:
+            self.chunk_history.pop(0)
+        
+        result = torch.zeros_like(chunk[0])
+        chunk_hist_len = len(self.chunk_history)
+        weights = torch.exp(-self.m * torch.arange(0, chunk_hist_len))
+        for i in range(chunk_hist_len):
+            result += weights[i] * self.chunk_history[i][chunk_hist_len-1-i] 
+        result /= torch.sum(weights)
+        return result.reshape(1,1,result.size(0))
 
 
 PolicyType: TypeAlias = Literal["obstacle", "multitask"]
