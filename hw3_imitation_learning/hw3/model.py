@@ -248,7 +248,7 @@ class MultiTaskPolicy(ObstaclePolicy):
                 print(torch.mean((self.last_state - curr_state)**2).item())
             self.ee_temp = self.base_ee_temp + torch.exp(-1000 * state_change).item() * 0.5
             self.gripper_temp = self.base_gripper_temp + torch.exp(-1000 * state_change).item() * 0.75
-            print(self.ee_temp)
+            #print(self.ee_temp)
         else:
             self.ee_temp = self.base_ee_temp
             self.gripper_temp = self.base_gripper_temp
