@@ -50,7 +50,7 @@ class ObstaclePolicy(BasePolicy):
     ) -> None:
         super().__init__(chunk_size=chunk_size, *args, **kwargs)
         # model size parameters
-        self.gripper_action_dim = 10
+        self.gripper_action_dim = 25
         self.ee_action_dim = 7 #[0, +x, +y, +z, -x, -y, -z]
         self.depth = depth 
         self.d_model = d_model
@@ -230,7 +230,7 @@ class MultiTaskPolicy(ObstaclePolicy):
         zero_movement_weight = 0.025
         self.ee_ce_weights[0] = zero_movement_weight
         self.ee_loss_weight = 0.4
-        self.ee_translation_per_step = 0.005
+        self.ee_translation_per_step = 0.01
         self.chunk_history = []
         self.temporal_ensemble_len = self.chunk_size
         self.last_state = None
