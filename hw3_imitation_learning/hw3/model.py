@@ -232,7 +232,7 @@ class MultiTaskPolicy(ObstaclePolicy):
         self.ee_loss_weight = 0.4
         self.ee_translation_per_step = 0.0065
         self.chunk_history = []
-        self.temporal_ensemble_len = 20
+        self.temporal_ensemble_len = 6
         self.last_state = None
         self.state_diff_thresh = 0.5
         self.m = 0.05
