@@ -225,17 +225,17 @@ class MultiTaskPolicy(ObstaclePolicy):
     ) -> None:
         super().__init__(chunk_size=chunk_size, *args, **kwargs)
         self.dropout = nn.Dropout(p=0.15)
-        self.base_ee_temp = 1.2
-        self.base_gripper_temp = 0.9
-        zero_movement_weight = 0.005
+        self.base_ee_temp = 1.3
+        self.base_gripper_temp = 1.3
+        zero_movement_weight = 0.025
         self.ee_ce_weights[0] = zero_movement_weight
         self.ee_loss_weight = 0.4
-        self.ee_translation_per_step = 0.0065
+        self.ee_translation_per_step = 0.005
         self.chunk_history = []
-        self.temporal_ensemble_len = 6
+        self.temporal_ensemble_len = 16
         self.last_state = None
         self.state_diff_thresh = 0.5
-        self.m = 0.05
+        self.m = 0.03
         
     def sample_actions(self, state):
         curr_state = state.squeeze(0)
@@ -246,8 +246,8 @@ class MultiTaskPolicy(ObstaclePolicy):
                 # check if the state vector has changed a lot
                 self.chunk_history = []
                 print(torch.mean((self.last_state - curr_state)**2).item())
-            self.ee_temp = self.base_ee_temp + torch.exp(-500 * state_change).item() * 0.5
-            self.gripper_temp = self.base_gripper_temp + torch.exp(-500 * state_change).item() * 0.5
+            #self.ee_temp = self.base_ee_temp + torch.exp(-500 * state_change).item() * 0.5
+            #self.gripper_temp = self.base_gripper_temp + torch.exp(-500 * state_change).item() * 0.5
             #print(self.gripper_temp)
         else:
             self.ee_temp = self.base_ee_temp
