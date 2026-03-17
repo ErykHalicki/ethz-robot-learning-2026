@@ -225,25 +225,34 @@ class MultiTaskPolicy(ObstaclePolicy):
     ) -> None:
         super().__init__(chunk_size=chunk_size, *args, **kwargs)
         self.dropout = nn.Dropout(p=0.15)
-        self.ee_temp = 0.9
-        self.gripper_temp = 0.9
+        self.base_ee_temp = 1.2
+        self.base_gripper_temp = 1.2
         zero_movement_weight = 0.015
         self.ee_ce_weights[0] = zero_movement_weight
         self.ee_loss_weight = 0.4
-        self.ee_translation_per_step = 0.0085
+        self.ee_translation_per_step = 0.005
         self.chunk_history = []
-        self.temporal_ensemble_len = 10
+        self.temporal_ensemble_len = 16
         self.last_state = None
-        self.state_diff_thresh = 0.05
-        self.m = 0.3
+        self.state_diff_thresh = 0.5
+        self.m = 0.2
         
     def sample_actions(self, state):
-        chunk = super().sample_actions(state).squeeze()
         curr_state = state.squeeze(0)
-        if self.last_state is not None and torch.mean(self.last_state - curr_state).item() > self.state_diff_thresh: 
-            # check if the state vector has changed a lot
-            self.chunk_history = []
-            print(torch.mean(self.last_state - curr_state).item())
+        
+        if self.last_state is not None:
+            state_change = torch.mean((self.last_state - curr_state)**2)
+            if state_change.item() > self.state_diff_thresh: 
+                # check if the state vector has changed a lot
+                self.chunk_history = []
+                print(torch.mean((self.last_state - curr_state)**2).item())
+            self.ee_temp = self.base_ee_temp + torch.exp(-1000 * state_change).item() * 0.75
+            self.gripper_temp = self.base_gripper_temp + torch.exp(-1000 * state_change).item() * 0.75
+            #print(self.ee_temp)
+        else:
+            self.ee_temp = self.base_ee_temp
+            self.gripper_temp = self.base_gripper_temp
+        chunk = super().sample_actions(state).squeeze()
 
         self.last_state = curr_state
         self.chunk_history.append(chunk)
