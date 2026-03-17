@@ -229,12 +229,12 @@ class MultiTaskPolicy(ObstaclePolicy):
         self.base_gripper_temp = 1.3
         zero_movement_weight = 0.01
         self.ee_ce_weights[0] = zero_movement_weight
-        self.ee_loss_weight = 0.4
+        self.ee_loss_weight = 0.7
         self.ee_translation_per_step = 0.005
         self.chunk_history = []
         self.temporal_ensemble_len = 10
         self.last_state = None
-        self.state_diff_thresh = 0.5
+        self.state_diff_thresh = 0.7
         self.m = 0.03
         
     def sample_actions(self, state):
