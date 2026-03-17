@@ -232,10 +232,10 @@ class MultiTaskPolicy(ObstaclePolicy):
         self.ee_loss_weight = 0.4
         self.ee_translation_per_step = 0.005
         self.chunk_history = []
-        self.temporal_ensemble_len = 16
+        self.temporal_ensemble_len = 10
         self.last_state = None
         self.state_diff_thresh = 0.5
-        self.m = 0.03
+        self.m = 0.05
         
     def sample_actions(self, state):
         curr_state = state.squeeze(0)
