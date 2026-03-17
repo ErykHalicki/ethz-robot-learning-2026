@@ -153,7 +153,7 @@ class ObstaclePolicy(BasePolicy):
         Returns seperate discretized actions for ee and gripper {[B, action_chunk], [B,action_chunk]}
         ([0, +x,+y, +z, -x, -y, -z], [-0.2, 0.0, 0.1, 0.2 ..., 1.8])
         '''
-        ee_movement_thresh = 0.004
+        ee_movement_thresh = 0.002
 
         positive_mask = torch.zeros_like(action[:, :, :3], dtype=bool)
         negative_mask = torch.zeros_like(action[:, :, :3], dtype=bool)
