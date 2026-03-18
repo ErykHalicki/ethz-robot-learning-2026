@@ -99,6 +99,7 @@ class ObstaclePolicy(BasePolicy):
         ee: [B, chunk_dim, ee_action_dim]
         gripper: [B, chunk_dim, gripper_action_dim]
         """
+        x = self.input_norm(x)
         x = self.activation(self.input_layer(x))
         for i in range(self.depth):
             x = self.dropout(self.activation(self.hidden_layers[i](self.layer_norms[i](x))))
