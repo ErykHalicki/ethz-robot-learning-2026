@@ -316,7 +316,7 @@ def main() -> None:
             tag = " ✓ best"
 
         print(
-            f"Epoch {epoch:3d}/{args.epochs} | "
+            f"{("Multicube" if args.multicube else "Singlecube")} | Epoch {epoch:3d}/{args.epochs} | "
             f"train {train_loss:.6f} | val {val_loss:.6f}{tag}"
         )
 
