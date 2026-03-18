@@ -415,6 +415,26 @@ def main():
     if not args.headless:
         cv2.namedWindow("DAgger Multicube Eval", cv2.WINDOW_AUTOSIZE)
 
+    visual_env: SO100MulticubeSimEnv | None = None
+
+    def get_visual_env(goal: str) -> SO100MulticubeSimEnv:
+        nonlocal visual_env
+        if visual_env is None:
+            print("  Creating visual environment for failure replay...")
+            cv2.namedWindow("DAgger Multicube Eval", cv2.WINDOW_AUTOSIZE)
+            visual_env = SO100MulticubeSimEnv(
+                xml_path=XML_PATH_MULTICUBE,
+                render_w=640,
+                render_h=480,
+                use_mocap=use_mocap,
+                goal_cube=goal,
+                shuffle_cubes=not args.no_shuffle,
+                seed=args.seed,
+                headless=False,
+            )
+        visual_env.set_goal(goal)
+        return visual_env
+
     successes = 0
     total_takeover_steps = 0
     per_color: dict[str, dict[str, int]] = {c: {"success": 0, "total": 0} for c in CUBE_COLORS}
@@ -425,6 +445,7 @@ def main():
             ep += 1
             goal = goal_schedule[ep - 1]
             env.set_goal(goal)
+            ep_rng_state = env.rng.bit_generator.state
             print(f"\n═══ DAgger Episode {ep}/{args.num_episodes}  (goal: {goal}) ═══")
             print("  Policy is running. Press your 'record' key to take over control.")
 
@@ -442,6 +463,31 @@ def main():
                 total=ep - 1,
                 headless=args.headless,
             )
+
+            if args.headless and not success and not aborted and not replay:
+                print("  Episode FAILED — rerunning with visuals for human takeover...")
+                venv = get_visual_env(goal)
+                while True:
+                    venv.rng.bit_generator.state = ep_rng_state
+                    success, n_takeover, aborted, replay = run_dagger_episode(
+                        venv,
+                        model,
+                        normalizer,
+                        state_keys,
+                        action_keys,
+                        device,
+                        writer,
+                        key_to_action,
+                        max_steps=args.max_steps,
+                        successes=successes,
+                        total=ep - 1,
+                        headless=False,
+                    )
+                    if replay:
+                        print("  Replaying visual episode...")
+                        venv.set_goal(goal)
+                        continue
+                    break
 
             if aborted:
                 print("Aborted by user.")
