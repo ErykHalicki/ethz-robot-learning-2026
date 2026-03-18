@@ -19,17 +19,14 @@ class BasePolicy(nn.Module, metaclass=abc.ABCMeta):
         self.chunk_size = chunk_size
 
     @abc.abstractmethod
-    def compute_loss(
-        self, state: torch.Tensor, action_chunk: torch.Tensor
-    ) -> torch.Tensor:
+    def compute_loss(self, state: torch.Tensor, action_chunk: torch.Tensor) -> torch.Tensor:
         """Compute training loss for a batch."""
+        raise NotImplementedError
 
     @abc.abstractmethod
-    def sample_actions(
-        self,
-        state: torch.Tensor,
-    ) -> torch.Tensor:
+    def sample_actions(self, state: torch.Tensor) -> torch.Tensor:
         """Generate a chunk of actions with shape (batch, chunk_size, action_dim)."""
+        raise NotImplementedError
 
 
 # TODO: Students implement ObstaclePolicy here.
@@ -146,6 +143,7 @@ class ObstaclePolicy(BasePolicy):
             gripper_actions = self.gripper_centers[gripper_idx.clamp(0, len(self.gripper_centers) - 1)]
             action_chunks = torch.cat([ee_actions, gripper_actions], dim=-1)
         return action_chunks
+
 
     def discretize_action(self, action):
         '''
@@ -268,6 +266,7 @@ class MultiTaskPolicy(ObstaclePolicy):
         return result.reshape(1,1,result.size(0))
 
 
+
 PolicyType: TypeAlias = Literal["obstacle", "multitask"]
 
 
@@ -278,6 +277,7 @@ def build_policy(
     chunk_size: int,
     d_model,
     depth,
+
 ) -> BasePolicy:
     if policy_type == "obstacle":
         return ObstaclePolicy(
