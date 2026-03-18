@@ -80,10 +80,16 @@ class ObstaclePolicy(BasePolicy):
                                           [-1.,0.,0.],  # -x
                                           [0.,-1.,0.],  # -y
                                           [0.,0.,-1.]]) # -z
-        self.ee_translation_per_step = 0.005
-        self.ee_temp = 1.0
-        self.gripper_temp = 1.0
-        
+        self.ee_translation_per_step = 0.01
+        self.ee_temp = 2.0
+        self.gripper_temp = 1.8
+
+        self.chunk_history = []
+        self.temporal_ensemble_len = self.chunk_size
+        self.last_state = None
+        self.state_diff_thresh = 0.8
+        self.m = 0.03
+
         bin_midpoints = (gripper_bounds[:-1] + gripper_bounds[1:]) / 2
         gripper_centers = torch.cat([gripper_bounds[:1], bin_midpoints, gripper_bounds[-1:]])
         self.register_buffer('gripper_centers', gripper_centers)
@@ -131,19 +137,36 @@ class ObstaclePolicy(BasePolicy):
         state: torch.Tensor,
     ) -> torch.Tensor:
         self.eval()
-        
+        curr_state = state.squeeze(0)
+
+        if self.last_state is not None:
+            state_change = torch.mean((self.last_state - curr_state) ** 2)
+            if state_change.item() > self.state_diff_thresh:
+                self.chunk_history = []
+                print(state_change.item())
+
         with torch.no_grad():
             action_logits = self.forward(state)
-            #action_logits["ee"][:, :, 0] /= 5
-            #print(action_logits["ee"])
-            ee_probabilities = self.softmax(action_logits["ee"]/self.ee_temp).flatten(end_dim=-2)
-            gripper_probabilities = self.softmax(action_logits["gripper"]/self.gripper_temp).flatten(end_dim=-2)
+            ee_probabilities = self.softmax(action_logits["ee"] / self.ee_temp).flatten(end_dim=-2)
+            gripper_probabilities = self.softmax(action_logits["gripper"] / self.gripper_temp).flatten(end_dim=-2)
             gripper_idx = torch.multinomial(gripper_probabilities, num_samples=1).reshape([state.size(0), self.chunk_size, 1])
             ee_idx = torch.multinomial(ee_probabilities, num_samples=1).reshape([state.size(0), self.chunk_size])
-            ee_actions = self.ee_action_map[ee_idx]*self.ee_translation_per_step
+            ee_actions = self.ee_action_map[ee_idx] * self.ee_translation_per_step
             gripper_actions = self.gripper_centers[gripper_idx.clamp(0, len(self.gripper_centers) - 1)]
-            action_chunks = torch.cat([ee_actions, gripper_actions], dim=-1)
-        return action_chunks
+            chunk = torch.cat([ee_actions, gripper_actions], dim=-1).squeeze()
+
+        self.last_state = curr_state
+        self.chunk_history.append(chunk)
+        if len(self.chunk_history) >= self.temporal_ensemble_len:
+            self.chunk_history.pop(0)
+
+        chunk_hist_len = len(self.chunk_history)
+        weights = torch.exp(-self.m * torch.arange(1, chunk_hist_len + 1))
+        result = torch.zeros_like(chunk[0])
+        for i in range(chunk_hist_len):
+            result += weights[i] * self.chunk_history[i][chunk_hist_len - 1 - i]
+        result /= torch.sum(weights)
+        return result.reshape(1, 1, result.size(0))
 
 
     def discretize_action(self, action):
@@ -224,47 +247,12 @@ class MultiTaskPolicy(ObstaclePolicy):
     ) -> None:
         super().__init__(chunk_size=chunk_size, *args, **kwargs)
         self.dropout = nn.Dropout(p=0.15)
-        self.base_ee_temp = 2.0
-        self.base_gripper_temp = 1.8
+        self.ee_temp = 2.0
+        self.gripper_temp = 1.8
         zero_movement_weight = 0.025
         self.ee_ce_weights[0] = zero_movement_weight
         self.ee_loss_weight = 0.4
         self.ee_translation_per_step = 0.01
-        self.chunk_history = []
-        self.temporal_ensemble_len = self.chunk_size
-        self.last_state = None
-        self.state_diff_thresh = 0.8
-        self.m = 0.03
-        
-    def sample_actions(self, state):
-        curr_state = state.squeeze(0)
-        
-        if self.last_state is not None:
-            state_change = torch.mean((self.last_state - curr_state)**2)
-            if state_change.item() > self.state_diff_thresh: 
-                # check if the state vector has changed a lot
-                self.chunk_history = []
-                print(torch.mean((self.last_state - curr_state)**2).item())
-            #self.ee_temp = self.base_ee_temp + torch.exp(-500 * state_change).item() * 0.5
-            #self.gripper_temp = self.base_gripper_temp + torch.exp(-500 * state_change).item() * 0.5
-            #print(self.gripper_temp)
-        else:
-            self.ee_temp = self.base_ee_temp
-            self.gripper_temp = self.base_gripper_temp
-        chunk = super().sample_actions(state).squeeze()
-
-        self.last_state = curr_state
-        self.chunk_history.append(chunk)
-        if len(self.chunk_history) >= self.temporal_ensemble_len:
-            self.chunk_history.pop(0)
-        
-        result = torch.zeros_like(chunk[0])
-        chunk_hist_len = len(self.chunk_history)
-        weights = torch.exp(-self.m * torch.arange(1, chunk_hist_len+1))
-        for i in range(chunk_hist_len):
-            result += weights[i] * self.chunk_history[i][chunk_hist_len-1-i] 
-        result /= torch.sum(weights)
-        return result.reshape(1,1,result.size(0))
 
 
 
