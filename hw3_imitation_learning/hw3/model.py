@@ -50,14 +50,14 @@ class ObstaclePolicy(BasePolicy):
     ) -> None:
         super().__init__(chunk_size=chunk_size, *args, **kwargs)
         # model size parameters
-        self.gripper_action_dim = 25
+        self.gripper_action_dim = 10
         self.ee_action_dim = 7 #[0, +x, +y, +z, -x, -y, -z]
         self.depth = depth 
         self.d_model = d_model
 
         self.activation = nn.GELU()
         self.input_layer = nn.Linear(self.state_dim,d_model)
-        #self.input_norm = nn.LayerNorm([self.state_dim])
+        self.input_norm = nn.LayerNorm([self.state_dim])
         self.layer_norms = nn.ModuleList([nn.LayerNorm([d_model]) for _ in range(self.depth)])
         self.hidden_layers = nn.ModuleList([nn.Linear(d_model, d_model) for _ in range(self.depth)])
         self.ee_output_layer = nn.Linear(d_model, self.ee_action_dim*self.chunk_size)
@@ -83,7 +83,7 @@ class ObstaclePolicy(BasePolicy):
                                           [-1.,0.,0.],  # -x
                                           [0.,-1.,0.],  # -y
                                           [0.,0.,-1.]]) # -z
-        self.ee_translation_per_step = 0.0075
+        self.ee_translation_per_step = 0.005
         self.ee_temp = 1.0
         self.gripper_temp = 1.0
         
