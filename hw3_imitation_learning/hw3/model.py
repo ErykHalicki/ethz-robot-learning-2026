@@ -225,12 +225,12 @@ class MultiTaskPolicy(ObstaclePolicy):
     ) -> None:
         super().__init__(chunk_size=chunk_size, *args, **kwargs)
         self.dropout = nn.Dropout(p=0.15)
-        self.base_ee_temp = 1.3
-        self.base_gripper_temp = 1.3
+        self.base_ee_temp = 2.0
+        self.base_gripper_temp = 1.8
         zero_movement_weight = 0.025
         self.ee_ce_weights[0] = zero_movement_weight
         self.ee_loss_weight = 0.4
-        self.ee_translation_per_step = 0.01
+        self.ee_translation_per_step = 0.0085
         self.chunk_history = []
         self.temporal_ensemble_len = self.chunk_size
         self.last_state = None
