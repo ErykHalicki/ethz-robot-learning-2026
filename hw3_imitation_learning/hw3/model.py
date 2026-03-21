@@ -38,11 +38,12 @@ class ObstaclePolicy(BasePolicy):
     """
 
     def __init__(
-        self, 
-        d_model = 350, 
+        self,
+        d_model = 350,
         depth = 4,
         chunk_size=10,
-        *args, 
+        temporal_ensemble: bool = True,
+        *args,
         **kwargs
     ) -> None:
         super().__init__(chunk_size=chunk_size, *args, **kwargs)
@@ -84,6 +85,7 @@ class ObstaclePolicy(BasePolicy):
         self.ee_temp = 2.0
         self.gripper_temp = 1.8
 
+        self.temporal_ensemble = temporal_ensemble
         self.chunk_history = []
         self.temporal_ensemble_len = self.chunk_size
         self.last_state = None
@@ -156,6 +158,10 @@ class ObstaclePolicy(BasePolicy):
             chunk = torch.cat([ee_actions, gripper_actions], dim=-1).squeeze()
 
         self.last_state = curr_state
+
+        if not self.temporal_ensemble:
+            return chunk[0].reshape(1, 1, -1)
+
         self.chunk_history.append(chunk)
         if len(self.chunk_history) >= self.temporal_ensemble_len:
             self.chunk_history.pop(0)

@@ -167,6 +167,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-steps", type=int, default=800, help="Maximum steps per episode (default: 800).")
     parser.add_argument("--headless", action="store_true", help="Run without rendering.")
     parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducible cube spawns.")
+    parser.add_argument("--no-temporal-ensemble", action="store_true", help="Disable temporal ensembling.")
 
     # single-cube args
     parser.add_argument("--adversarial-obstacle", action="store_true", help="Use adversarial three-zone obstacle placement.")
@@ -188,6 +189,8 @@ def main() -> None:
         args.checkpoint,
         device,
     )
+    if hasattr(model, "temporal_ensemble"):
+        model.temporal_ensemble = not args.no_temporal_ensemble
 
     use_mocap = not any("action_joints" in k for k in action_keys)
 
