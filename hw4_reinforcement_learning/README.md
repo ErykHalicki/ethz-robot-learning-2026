@@ -509,7 +509,10 @@ Submit a single video file (`.mp4`) covering all exercises. If the file is too l
 - As a rough guideline, aim for approximately 1 minute per exercise 1-3, and 2 minutes for exercise 4.
 - You may use slides, plots, or screen recordings to support your explanations.
 - Results must be **visible on screen** while you are explaining them.
-- Before submitting check the video and audio. 
+- Before submitting check the video and audio.
+
+### PDF Submission
+Submit a pdf files for exercises 2, 3, 4. For exercise 1, you are supposed to visualize all images in your video submission to answer theoretical questions, so pdf file is not necessary.
 
 
 
