@@ -92,10 +92,10 @@ class PPOAgent:
             # 5. compute the state value from the critic
             action = self.actor.act(obs)
             action_clipped = torch.clamp(action, -1.0, 1.0)
-            action_log_prob = self.actor.get_actions_log_prob(action)
+            action_log_prob = self.actor.get_actions_log_prob(action).item()
             action_mu = self.actor.action_mean
             action_std = self.actor.action_std
-            value = self.critic(obs)
+            value = self.critic(obs).item()
 
         return action, action_clipped, value, action_log_prob, action_mu, action_std
 
